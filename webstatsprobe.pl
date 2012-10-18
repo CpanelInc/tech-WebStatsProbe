@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 use Term::ANSIColor qw(:constants);
-#$Term::ANSIColor::AUTORESET = 1;
+$Term::ANSIColor::AUTORESET = 1;
 
 # cPanel, Inc.
 # by: Paul Trost
@@ -367,11 +367,11 @@ sub DumpDomainConfig {
 		foreach my $dom (@doms) {
 			#print "  $dom\n";
 			my ( $domain , $enabled ) = split ('=' , $dom); 
-			print RESET "$domain = ";
+			print "$domain = ";
 			if ( $enabled eq 'yes' ) {
-				print BOLD GREEN "$enabled\n";
+				print BOLD GREEN "$enabled", RESET, "\n";
 			} elsif ( $enabled eq 'no' ) {
-				print BOLD RED "$enabled\n";
+				print BOLD RED "$enabled", RESET, "\n";
 			}
 		}
 	}
