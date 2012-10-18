@@ -3,7 +3,7 @@
 use warnings;
 use strict;
 use Term::ANSIColor qw(:constants);
-$Term::ANSIColor::AUTORESET = 1;
+#$Term::ANSIColor::AUTORESET = 1;
 
 # cPanel, Inc.
 # by: Paul Trost
