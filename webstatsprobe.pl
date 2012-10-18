@@ -2,8 +2,8 @@
 
 use warnings;
 use strict;
-use Term::ANSIColor qw(:constants);
-$Term::ANSIColor::AUTORESET = 1;
+use Term::ANSIColor;
+#$Term::ANSIColor::AUTORESET = 1;
 
 # cPanel, Inc.
 # by: Paul Trost
@@ -314,35 +314,44 @@ sub WhoCanPick {
 
 sub GetEnabledDoms {
 	my $prog = shift;
-	my $user = shift;
 	chomp( $prog = `echo $prog | tr "[:lower:]" "[:upper:]"` );
+	my $user = shift;
 	chomp( my $homedir = `grep $user /etc/passwd | cut -d: -f6 | egrep $user\$` );
-	my @alldoms = `egrep "^DNS[0-9]{0,3}=" /var/cpanel/users/$user | cut -f2 -d=`;
+	chomp( my @alldoms = `egrep "^DNS[0-9]{0,3}=" /var/cpanel/users/$user | cut -f2 -d=` );
 	if ( -e "$homedir/tmp/stats.conf" ) {
+		my @domains;
 		foreach my $dom (@alldoms) {
 			chomp( my $capsdom = `echo $dom | tr "[:lower:]" "[:upper:]"` );
-			chomp( my $domsetting = `grep "${prog}-${capsdom}=" ${homedir}/tmp/stats.conf | sed 's/' ${prog}'-//' | tr "[:upper:]" "[:lower:]"` );
-			if ( $domsetting ne "" ) {
-				print "$dom=no";
+			chomp( my $domsetting = `grep "$prog-$capsdom=" $homedir/tmp/stats.conf | sed 's/'$prog'-//' | tr "[:upper:]" "[:lower:]"` );
+			if ( $domsetting eq "" ) {
+				$dom .= "=no";
+				push @domains, $dom;
 			} else {
-			        print $domsetting;
+			        push @domains, $domsetting;
 			}
 		}
+		return @domains;
 	} else {
 		# If the user is new or just hasn't saved their log program choices in cPanel, and the stats program is active
 		# by default, then show Yes for each domain as the default then would be On since the user hasn't overridden it in cPanel.
 		# If however the stats program is not active by default then show No as stats won't generate for that program unless
 		# the user specifically enables it in cPanel.
 		if (( &UserAllowedRegex($user) =~ 'Yes' or &AllAllowed =~ 'Yes' ) and ( &IsDefaultOn($prog) =~ 'On' )) {
+			my @domains;
 			foreach my $dom (@alldoms) {
 				chomp( $dom );
-				print "$dom=yes\n";
+				$dom .= "=yes";
+				push @domains , "$dom";
 			}
+			return @domains;
 		} else {
+			my @domains;
 			foreach my $dom (@alldoms) {
 				chomp( $dom );
-				print "$dom=no\n";
+				$dom .= "=no";
+				push @domains, $dom;
 			}
+			return @domains;
 		}
 	}
 }
@@ -356,7 +365,14 @@ sub DumpDomainConfig {
 	} else {
 		print DARK GREEN "CAN PICK" , BOLD WHITE "(Per-Domain Config Listed Below)\n";
 		foreach my $dom (@doms) {
-			print "  $dom\n";
+			#print "  $dom\n";
+			my ( $domain , $enabled ) = split ('=' , $dom); 
+			print colored ['reset'], "$domain = ";
+			if ( $enabled eq 'yes' ) {
+				print colored ['bold green'], "$enabled\n";
+			} elsif ( $enabled eq 'no' ) {
+				print colored ['bold red'], "$enabled\n";
+			}
 		}
 	}
 }
