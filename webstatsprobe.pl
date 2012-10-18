@@ -367,11 +367,11 @@ sub DumpDomainConfig {
 		foreach my $dom (@doms) {
 			#print "  $dom\n";
 			my ( $domain , $enabled ) = split ('=' , $dom); 
-			print "$domain = ";
+			print "  $domain = ";
 			if ( $enabled eq 'yes' ) {
-				print BOLD GREEN "$enabled","\n";
+				print DARK GREEN "$enabled","\n";
 			} elsif ( $enabled eq 'no' ) {
-				print BOLD RED "$enabled","\n";
+				print DARK RED "$enabled","\n";
 			}
 		}
 	}
