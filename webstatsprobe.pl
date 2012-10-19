@@ -27,8 +27,29 @@ foreach( @ARGV ) {
 	}
 }
 
+#####################
+# Open File Handles #
+#####################
+open( my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config' )
+	or die "Could not open cpanel.config, $!\n";
 
-#############
+###################################
+# Gather Values For Later Sub Use #
+###################################
+
+# From /var/cpanel/cpanel.config
+my @cycle_hours;
+my @bwcycle_hours;
+while (<$cpconfig_fh>) {
+	if ( $_ =~ m/^cycle_hours/ ) {
+		chomp( @cycle_hours = split( '=' , $_ ));
+	}
+	if ( $_ =~ m/^bwcycle/ ) {
+		chomp( @bwcycle_hours = split( '=' , $_ ));
+	}
+}
+
+##############
 ## Functions #
 ##############
 sub BlackedHours {
@@ -63,24 +84,20 @@ sub BlackedHours {
 sub LogsRunEvery {
 # Show how often stats are set to ptocess
 # Grab cycle_hours and store result in $hours
-	chomp( my $hours = `grep "cycle_hours=" /var/cpanel/cpanel.config | sed 's/.*=//'` );
-
-	if ( ! $hours ) {
-		return "24";
+	if ( $cycle_hours[1] ) {
+		return $cycle_hours[1];
 	} else {
-		return "$hours";
+		return 24;
 	}
 }
 
 sub BandwidthRunsEvery {
 # Show how often bandwidth is set to process
 # Grab bwcycle= and store result in $hours
-	chomp( my $hours = `grep "bwcycle=" /var/cpanel/cpanel.config | sed 's/.*=//'` );
-
-	if ( ! $hours ) {
-		return "2";
+	if ( $bwcycle_hours[1] ) {
+		return $bwcycle_hours[1];
 	} else {
-		return "$hours";
+		return 2;
 	}
 }
 
@@ -371,7 +388,7 @@ sub DumpDomainConfig {
 			if ( $enabled eq 'yes' ) {
 				print DARK GREEN "$enabled","\n";
 			} elsif ( $enabled eq 'no' ) {
-				print DARK RED "$enabled","\n";
+				print BOLD RED "$enabled","\n";
 			}
 		}
 	}
@@ -448,12 +465,12 @@ sub DomainResolves {
 	my $donotresolve;
 	my $timedout;
 	my $notbound;
-	chomp( my $bound = `/sbin/ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print \$1 }'` );
+	chomp( my $bound = `/sbin/ifconfig` );
 	# Grab domain list from the cPanel user file
 	chomp( my @domlist = `grep ^DNS /var/cpanel/users/$user | cut -f2 -d=` );
 	# For each domain in the list we see if google's public DNS can resolve the IP
 	foreach my $name (@domlist) {
-		my $ip = `dig \@8.8.8.8 +short $name`;
+		chomp( my $ip = `dig \@8.8.8.8 +short $name` );
 		# If it can't be resolved..
 		if ( $ip eq "" ) {
 			$donotresolve .= "$name\n";
@@ -592,3 +609,8 @@ if ( ! $user ) {
 	}
 }
 print "\n";
+
+###########
+# Cleanup #
+###########
+close( $cpconfig_fh );
