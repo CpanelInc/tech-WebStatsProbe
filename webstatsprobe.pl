@@ -5,39 +5,48 @@ use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 
-# cPanel, Inc.
-# by: Paul Trost
+##########################
+# cPanel, Inc.           #
+# by: Paul Trost         #
+##########################
 
-my $version = 0.1;
+my $version = 0.2;
+
+
+##################################################################################
+# Parse positional parameters for flags and set variables if argument is present #
+##################################################################################
 
 # Set defaults for positional parameters
 my $noquery = 1; # Default to doing DNS queries on user domains
 my $user = "";
 
-# Parse positional parameters for flags and set variables if argument is present
-foreach( @ARGV ) {
+foreach my $arg (@ARGV) {
 	# if any of the arguments don't contain "--" then make that argument the user variable
-	if ( $_ !~ '--' ) {
-		$user = $_;
+	if ( $arg !~ '--' ) {
+		$user = $arg;
 	}
 
 	# noquery is used to turning off DNS lookups for user domains when webstatsprobe called against a user
-	if ( $_ =~ '--noquery' ) {
+	if ( $arg =~ '--noquery' ) {
 		$noquery = 0;
 	}
 }
 
+
 #####################
 # Open File Handles #
 #####################
+
 open( my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config' )
 	or die "Could not open cpanel.config, $!\n";
+
 
 ###################################
 # Gather Values For Later Sub Use #
 ###################################
 
-# From /var/cpanel/cpanel.config
+# From /var/cpanel/cpanel.config, read the file and put the settings into an array to use later
 my @cycle_hours;
 my @bwcycle_hours;
 while (<$cpconfig_fh>) {
@@ -49,9 +58,126 @@ while (<$cpconfig_fh>) {
 	}
 }
 
+
+#######################################
+# Misc. checks for stupid user tricks #
+#######################################
+
+# Run the Awwwstats function to see if awstats.pl is executable
+&Awwwwstats;
+
+
+#####################
+# Main Blob of Code #
+#####################
+
+# No arg = general info on web stats setup
+if ( ! $user ) {
+	print "\n";
+	print "Displaying general information on web stats configuration.\n";
+	print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
+	print "\n";
+	print DARK CYAN "[ Web Stats Probe -v$version - Results For:", BOLD YELLOW "System", DARK CYAN "]\n";
+	print "\n";
+	print "CPANELLOGD: " , &LogDRunning , "\n";
+	print "HTTPD CONF: " , &HttpdConf , "\n";
+	print "BLACKED OUT: " , &BlackedHours , "\n";
+	print "LOG PROCESSING RUNS EVERY: ", DARK GREEN &LogsRunEvery , "hours\n";
+	print "BANDWIDTH PROCESSING RUNS EVERY: ", DARK GREEN &BandwidthRunsEvery , "hours\n";
+	print "KEEPING UP: " , &KeepingUp , "\n";
+	print "CAN ALL USERS PICK: ";
+	print &AllAllowed , "\n";
+	if ( &AllAllowed =~ 'No' ) {
+		print "WHO CAN PICK STATS: ";
+		print &WhoCanPick, "\n";
+	}
+	print "ANALOG: " , &IsAvailable( 'analog' ) , " (Active by Default: " , &IsDefaultOn( 'ANALOG' ) , ")\n";
+	print "AWSTATS: " , &IsAvailable( 'awstats' ) , " (Active by Default: " , &IsDefaultOn( 'AWSTATS' ) , ")\n";
+	print "WEBALIZER " , &IsAvailable( 'webalizer' ) , " (Active by Default: " , &IsDefaultOn( 'WEBALIZER' ) , ")\n";
+	if ( &CanRunLogaholic eq 'Yes' ) {
+		print "LOGAHOLIC: " , &IsAvailable( 'logaholic' ) , " (Active by Default: " , &IsDefaultOn( 'LOGAHOLIC' ) , ")\n";
+	}
+} else {
+	# If called with a user argument, let's verify that user exists and display the output
+	if ( -e "/var/cpanel/users/$user" and -d "/var/cpanel/userdata/$user" ) {
+		print "\n";
+		print "Available flags when running \"webstatsprobe <user>\"\n";
+		if ( $noquery == 1 ) {
+			print "--noquery (turns off DNS lookups for each user domain)\n"
+		} else {
+			print "None\n";
+		}
+		print "\n";
+		print DARK CYAN "[ Web Stats Probe v$version - Results For:" , BOLD YELLOW $user , DARK CYAN "]\n";
+		print "\n";
+		# Here we want to test and see if STATGENS is present in the cPanel user file.
+		# If it is this means that the server admin has blocked out certain stats
+		# applications for the specific users in WHM. If STATGENS exists then we test to see if
+		# there are any stats programs listed after STATGENS=. If not then the admin has blocked
+		# all stats programs. Yes, we have seen someone do this before.
+		chomp( my $statgens = `grep STATGENS /var/cpanel/users/$user` );
+		chomp( my $statgens_list = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//'` );
+		if ( $statgens  and ! $statgens_list ) {
+			print BOLD RED "*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\n\n";
+		}
+		# Check if each of the user domains resolve to IP on the server
+		if ( $noquery != 0 ) {
+			&DomainResolves($user);
+		}
+		print "KEEPING UP (STATS): " , &UserKeepUp($user) , " (Last Run: " , &LastRun($user) , ")\n";
+		print "KEEPING UP (BANDWIDTH): " , &BwUserKeepUp($user), " (Last Run: ", &BwLastRun($user) , ")\n";
+		if ( &BwUserKeepUp($user) =~ 'No' ) {
+			print "\n";
+			print BOLD RED "*** Bandwidth processing isn't keeping up! Please check the eximstats DB for corruption ***\n";
+			print "If the eximstats.sends table is corrupted then when runweblogs is ran the smtp rrd file won't generate correctly and the file /var/cpanel/lastrun/$user/bandwidth won't update.\n";
+			print BOLD RED "*** Please run: \"mysqlcheck -r eximstats\" ***\n";
+			print "\n";
+		}
+		print "ANALOG: ";
+		print &WillRunForUser('analog' , $user);
+		print "AWSTATS: ";
+	        print &WillRunForUser('awstats' , $user); 	
+		print "WEBALIZER: ";
+	        print &WillRunForUser('webalizer' , $user);
+		if ( &CanRunLogaholic =~ 'Yes' ) {
+			print "LOGAHOLIC: ";
+			print &WillRunForUser('logaholic' , $user);
+		}
+		if ( &AllAllowed =~ 'No' and &UserAllowedRegex($user) =~ 'No' ) {
+			print "CAN PICK STATS: ";
+			print &UserAllowed($user);
+		}
+		if ( -e '/tmp/blockedprog' ) {
+			print "\n";
+			print BOLD RED "*** Webstatsprobe reports that one or more statsprograms are BLOCKED for the user by the server admin ***\n";
+			print BOLD RED "To correct this issue in WHM, go to:\n";
+			print "Server Configuration >> Statistics Software Configuration >> User Permissions >>\n";
+			print "Choose Users >> Choose Specific Stats Programs for\n";
+			print "\n";
+			print "To use the default setting of all apps available, remove the STATGENS line from the cPanel user file.\n";
+			unlink '/tmp/blockedprog'; 
+		}
+	} else {
+		# Otherwise we say too bad so sad.
+		print "\n";
+		print "ERROR: User [ $user ] not found.\n";
+		print "You may have entered the wrong username, or /var/cpanel/$user or /var/cpanel/userdata/$user is missing.\n";
+		print "Usage: webstatsprobe <cP User>\n";
+	}
+}
+print "\n";
+
+
+###########
+# Cleanup #
+###########
+close( $cpconfig_fh );
+
+
 ##############
 ## Functions #
 ##############
+
 sub BlackedHours {
 # Get the blackout hours and display if stats can run within those hours
 	if ( -f '/etc/stats.conf' ) {
@@ -137,7 +263,7 @@ sub IsDefaultOn {
 
 sub AllAllowed {
 # Display if per WHM all users are allowed to pick stats programs
-	if ( -f '/etc/stats.conf') {
+	if ( -f '/etc/stats.conf' ) {
 		chomp( my $allowall = `egrep "ALLOWALL=" /etc/stats.conf | sed 's/.*=//'` );
 		chomp( my $users = `grep VALIDUSERS /etc/stats.conf | sed -e 's/.*=//' -e 's/,/ /g'` );
 		if ( $allowall eq 'yes' ) {
@@ -505,112 +631,3 @@ sub DomainResolves {
 		}
 	}
 }		
-
-
-#####################
-# Main Blob of Code #
-#####################
-
-# Run the Awwwstats function to see if awstats.pl is executable, and run CheckPerl to verify Perl
-&Awwwwstats;
-
-# No arg = general info on web stats setup
-if ( ! $user ) {
-	print "\n";
-	print "Displaying general information on web stats configuration.\n";
-	print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
-	print "\n";
-	print DARK CYAN "[ Web Stats Probe -v$version - Results For:", BOLD YELLOW "System", DARK CYAN "]\n";
-	print "\n";
-	print "CPANELLOGD: " , &LogDRunning , "\n";
-	print "HTTPD CONF: " , &HttpdConf , "\n";
-	print "BLACKED OUT: " , &BlackedHours , "\n";
-	print "LOG PROCESSING RUNS EVERY: ", DARK GREEN &LogsRunEvery , "hours\n";
-	print "BANDWIDTH PROCESSING RUNS EVERY: ", DARK GREEN &BandwidthRunsEvery , "hours\n";
-	print "KEEPING UP: " , &KeepingUp , "\n";
-	print "CAN ALL USERS PICK: ";
-	print &AllAllowed , "\n";
-	if ( &AllAllowed =~ 'No' ) {
-		print "WHO CAN PICK STATS: ";
-		print &WhoCanPick, "\n";
-	}
-	print "ANALOG: " , &IsAvailable( 'analog' ) , " (Active by Default: " , &IsDefaultOn( 'ANALOG' ) , ")\n";
-	print "AWSTATS: " , &IsAvailable( 'awstats' ) , " (Active by Default: " , &IsDefaultOn( 'AWSTATS' ) , ")\n";
-	print "WEBALIZER " , &IsAvailable( 'webalizer' ) , " (Active by Default: " , &IsDefaultOn( 'WEBALIZER' ) , ")\n";
-	if ( &CanRunLogaholic eq 'Yes' ) {
-		print "LOGAHOLIC: " , &IsAvailable( 'logaholic' ) , " (Active by Default: " , &IsDefaultOn( 'LOGAHOLIC' ) , ")\n";
-	}
-} else {
-	# If called with a user argument, let's verify that user exists and display the output
-	if ( -e "/var/cpanel/users/$user" and -d "/var/cpanel/userdata/$user" ) {
-		print "\n";
-		print "Available flags when running \"webstatsprobe <user>\"\n";
-		if ( $noquery == 1 ) {
-			print "--noquery (turns off DNS lookups for each user domain)\n"
-		} else {
-			print "None\n";
-		}
-		print "\n";
-		print DARK CYAN "[ Web Stats Probe v$version - Results For:" , BOLD YELLOW $user , DARK CYAN "]\n";
-		print "\n";
-		# Here we want to test and see if STATGENS is present in the cPanel user file.
-		# If it is this means that the server admin has blocked out certain stats
-		# applications for the specific users in WHM. If STATGENS exists then we test to see if
-		# there are any stats programs listed after STATGENS=. If not then the admin has blocked
-		# all stats programs. Yes, we have seen someone do this before.
-		chomp( my $statgens = `grep STATGENS /var/cpanel/users/$user` );
-		chomp( my $statgens_list = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//'` );
-		if ( $statgens  and ! $statgens_list ) {
-			print BOLD RED "*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\n\n";
-		}
-		# Check if each of the user domains resolve to IP on the server
-		if ( $noquery != 0 ) {
-			&DomainResolves($user);
-		}
-		print "KEEPING UP (STATS): " , &UserKeepUp($user) , " (Last Run: " , &LastRun($user) , ")\n";
-		print "KEEPING UP (BANDWIDTH): " , &BwUserKeepUp($user), " (Last Run: ", &BwLastRun($user) , ")\n";
-		if ( &BwUserKeepUp($user) =~ 'No' ) {
-			print "\n";
-			print BOLD RED "*** Bandwidth processing isn't keeping up! Please check the eximstats DB for corruption ***\n";
-			print "If the eximstats.sends table is corrupted then when runweblogs is ran the smtp rrd file won't generate correctly and the file /var/cpanel/lastrun/$user/bandwidth won't update.\n";
-			print BOLD RED "*** Please run: \"mysqlcheck -r eximstats\" ***\n";
-			print "\n";
-		}
-		print "ANALOG: ";
-		print &WillRunForUser('analog' , $user);
-		print "AWSTATS: ";
-	        print &WillRunForUser('awstats' , $user); 	
-		print "WEBALIZER: ";
-	        print &WillRunForUser('webalizer' , $user);
-		if ( &CanRunLogaholic =~ 'Yes' ) {
-			print "LOGAHOLIC: ";
-			print &WillRunForUser('logaholic' , $user);
-		}
-		if ( &AllAllowed =~ 'No' and &UserAllowedRegex($user) =~ 'No' ) {
-			print "CAN PICK STATS: ";
-			print &UserAllowed($user);
-		}
-		if ( -e '/tmp/blockedprog' ) {
-			print "\n";
-			print BOLD RED "*** Webstatsprobe reports that one or more statsprograms are BLOCKED for the user by the server admin ***\n";
-			print BOLD RED "To correct this issue in WHM, go to:\n";
-			print "Server Configuration >> Statistics Software Configuration >> User Permissions >>\n";
-			print "Choose Users >> Choose Specific Stats Programs for\n";
-			print "\n";
-			print "To use the default setting of all apps available, remove the STATGENS line from the cPanel user file.\n";
-			unlink '/tmp/blockedprog'; 
-		}
-	} else {
-		# Otherwise we say too bad so sad.
-		print "\n";
-		print "ERROR: User [ $user ] not found.\n";
-		print "You may have entered the wrong username, or /var/cpanel/$user or /var/cpanel/userdata/$user is missing.\n";
-		print "Usage: webstatsprobe <cP User>\n";
-	}
-}
-print "\n";
-
-###########
-# Cleanup #
-###########
-close( $cpconfig_fh );
