@@ -284,17 +284,16 @@ sub AllAllowed {
 
 sub UserAllowed {
 	# If a user has individually been set to pick stats then show yes, but show no if stats.conf has bad permissions
-	if (-f '/etc/stats.conf') {
+	if (%stats_settings) {
 		my $user = shift;
-		my $users = `grep VALIDUSERS /etc/stats.conf | sed -e 's/.*=//' -e 's/,/ /g'`;
 		# if the user is set to pick stats, or all users are set to pick stats, and stats.conf has good permissions, then print yes. Otherwise, if the user is set to pick stats and stats.conf has bad permissions, then print no, else print no.
 		my $allowall = `grep \"ALLOWALL=yes\" /etc/stats.conf`;
-		if ($users =~ /\b$user\b/ or $allowall) {
+		if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/ or $stats_settings{'ALLOWALL'}) {
 			my $statsconf = `find /etc/stats.conf -perm 644`;
 			if ($statsconf) {
 				print DARK GREEN "Yes\n";
 			} 
-		} elsif ($users =~ $user and ! `find /etc/stats.conf -perm 644`) {
+		} elsif ($stats_settings{'VALIDUSERS'} =~ $user and ! `find /etc/stats.conf -perm 644`) {
 			print BOLD RED "Yes\n";
 			print "\n";
 			print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause user $user to not be able to choose log programs in cPanel, however, the user will still show the ability to choose log programs. ***\n";
@@ -309,10 +308,9 @@ sub UserAllowed {
 
 sub UserAllowedRegex {
 # This function is only needed because the color codes in the yes/no output in UserAllowed() don't work with the expected yes/no output from running that function in GetEnabledDoms().
-	if (-f '/etc/stats.conf') {
+	if (%stats_settings) {
 		my $user = shift;
-		my $users = `grep VALIDUSERS /etc/stats.conf | sed -e 's/.*=//' -e 's/,/ /g'`;
-		if ($users =~ $user) {
+		if ($stats_settings{'VALIDUSERS'} =~ $user) {
 			return "Yes";
 		} else {
 			return "No";
