@@ -39,6 +39,7 @@ foreach my $arg (@ARGV) {
 
 open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
 	or die "Could not open cpanel.config, $!\n";
+open(my $statsconfig_fh , '<' , '/etc/stats.conf');
 
 
 ###################################
@@ -49,9 +50,19 @@ open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
 my %config_settings;
 while (<$cpconfig_fh>) {
 	chomp(my $param = $_);
-	my ($option , $value) = split('=' , $param); 
+	my($option , $value) = split('=' , $param); 
 	if (defined($value)) {
 		$config_settings{$option} = $value;
+	}
+}
+
+# From /etc/stats.conf
+my %stats_settings;
+if (-f '/etc/stats.conf') {
+	while (<$statsconfig_fh>) {
+		chomp(my $param = $_);
+		my($option , $value) = split('=' , $param);
+		$stats_settings{$option} = $value;
 	}
 }
 
@@ -60,6 +71,7 @@ while (<$cpconfig_fh>) {
 # Cleanup #
 ###########
 close($cpconfig_fh);
+close($statsconfig_fh);
 
 
 #######################################
@@ -177,28 +189,27 @@ print "\n";
 
 sub BlackedHours {
 # Get the blackout hours and display if stats can run within those hours
-	if (-f '/etc/stats.conf') {
+	if ($stats_settings{'BLACKHOURS'} and $stats_settings{'BLACKHOURS'} ne "") {
 		# Removes "BLACKHOURS=" and replace the , between numbers with a space
-		chomp(my $hours = `grep "BLACKHOURS=" /etc/stats.conf | sed -e 's/.*=//' -e 's/,/ /g'`);
-		my @hours = split(' ', $hours);
-
+		my @hours = split(',' , $stats_settings{'BLACKHOURS'});
+		
 		# Subtract the amount of array indices (hours) from 24 to get how many hours are left that stats can run
 		my $allowed = 24 - scalar(@hours);
 
 		# if the amount of hours selected is 24, then print stats will never run'
 		if (scalar(@hours) == 24) {
-			return "@hours (Allowed time: " , BOLD RED "0 hours - STATS WILL NEVER RUN!" , BOLD WHITE ")";
+			return "$stats_settings{'BLACKHOURS'}" , "(Allowed time: " , BOLD RED "0 hours - STATS WILL NEVER RUN!" , BOLD WHITE ")";
 		} else {
 			# If the amount of hours selected is 0, meaning no hours are blacked out, then..
 			if (scalar(@hours) == 0) {
 				return DARK GREEN "Never" , BOLD WHITE "(Allowed Time:" , DARK GREEN "24 hours" , BOLD WHITE ")";
 			} else {
 				# If some horus are blacked out, print the value of @hours (the blacked out hours).
-				return BOLD RED "@hours" , BOLD WHITE "(Allowed Time:", DARK GREEN "$allowed hours" , BOLD WHITE ")";
+				return BOLD RED "$stats_settings{'BLACKHOURS'}" , BOLD WHITE "(Allowed Time:", DARK GREEN "$allowed hours" , BOLD WHITE ")";
 			}
 		}
 	} else {
-		# if /etc/stats.conf doesn't exist (new install probably), then print "Never"
+		# if /etc/stats.conf doesn't exist or does but BLACKHOURS not set, then print "Never"
 		return DARK GREEN "Never";
 	}
 }
