@@ -3,7 +3,7 @@
 # <= 0.5 Written by: Brian Oates
 # >= 0.6 by: Paul Trost
 
-version="1.9.1"
+version="1.9.2"
 
 # TODO
 # check if prog enabled and /home/user/tmp/$prog is missing
@@ -101,12 +101,15 @@ IsDefaultOn() {
 # Make sure we're looking for the stats program in upper case, and display if the stats program is set to active by default or not
 if [[ -f /etc/stats.conf ]]; then
 prog=$(echo ${1} | tr "[:lower:]" "[:upper:]")
+lcprog=$(echo ${1} | tr "[:upper:]" "[:lower:]")
 isdefined=$(egrep "DEFAULTGENS=" /etc/stats.conf)
 ison=$(egrep "DEFAULTGENS=.*${prog}" /etc/stats.conf)
 	if [[ -z "$isdefined" ]]; then
 		printf "%b\n" "\033[0;32mOn\033[0m"
 	else    
 		if [[ -z "$ison" ]]; then
+			printf "%b\n" "\033[1;31mOff\033[0m"
+		elif [[ "$ison" ]] && [[ $(IsAvailable "$lcprog") =~ Disabled ]]; then
 			printf "%b\n" "\033[1;31mOff\033[0m"
 		else
 			printf "%b\n" "\033[0;32mOn\033[0m"
