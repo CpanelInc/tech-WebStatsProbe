@@ -62,7 +62,9 @@ if (-f '/etc/stats.conf') {
 	while (<$statsconfig_fh>) {
 		chomp(my $param = $_);
 		my($option , $value) = split('=' , $param);
-		$stats_settings{$option} = $value;
+		if (defined($value)) {
+			$stats_settings{$option} = $value;
+		}
 	}
 }
 
@@ -267,17 +269,15 @@ sub IsDefaultOn {
 
 sub AllAllowed {
 # Display if per WHM all users are allowed to pick stats programs
-	if (-f '/etc/stats.conf') {
-		chomp(my $allowall = `egrep "ALLOWALL=" /etc/stats.conf | sed 's/.*=//'`);
-		chomp(my $users = `grep VALIDUSERS /etc/stats.conf | sed -e 's/.*=//' -e 's/,/ /g'`);
-		if ($allowall eq 'yes') {
+	if (%stats_settings) {
+		if ($stats_settings{'ALLOWALL'} eq 'yes') {
 			return DARK GREEN "Yes";
-		} elsif (! $allowall and ! $users) {
+		} elsif (! $stats_settings{'ALLOWALL'} and ! $stats_settings{'VALIDUSERS'}) { # Else if ALLOWALL and VALIDUSERS had no values
 			return DARK GREEN "No";
-		} else {
+		} else { # else if ALLOWALL is not equal to yes
 			return BOLD RED "No";
 		}
-	} else {
+	} else { # If /etc/stats.conf doesn't exist
 		return DARK GREEN "No";
 	}
 }
