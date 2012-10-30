@@ -248,15 +248,13 @@ sub IsAvailable {
 sub IsDefaultOn {
 # Make sure we're looking for the stats program in upper case, and display if the stats program is set to to active by default or not
 	my $prog = shift;
-	if (-f '/etc/stats.conf') {
-		chomp(my $isdefined = `egrep "DEFAULTGENS=" /etc/stats.conf`);
-		chomp(my $ison = `egrep "DEFAULTGENS=.*${prog}" /etc/stats.conf`);
-		if ($isdefined eq "") { # If no DEFAULTGENS in /etc/stats.conf
+ 	if (%stats_settings) {
+		if (! $stats_settings{'DEFAULTGENS'}) { # If no DEFAULTGENS in /etc/stats.conf
 			return DARK GREEN "On";
 		} else {
-			if ($ison eq "") { # Else it is there but the specific prog name isn't in the DEFAULTGENS line
+			if ($stats_settings{'DEFAULTGENS'} !~ $prog) { # Else it is there but the specific prog name isn't in the DEFAULTGENS line
 				return BOLD RED "Off";
-		} elsif ($ison and &IsAvailable(lc($prog)) =~ 'Disabled') { # Else, if the prog is in DEFAULTGENS (meaning it was set to Active by default, but the prog was then Disabled
+		} elsif ($stats_settings{'DEFAULTGENS'} =~ $prog and &IsAvailable(lc($prog)) =~ 'Disabled') { # Else, if the prog is in DEFAULTGENS (meaning it was set to Active by default, but the prog was then Disabled
 				return BOLD RED "Off";
 			} else {
 				return DARK GREEN "On";
