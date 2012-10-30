@@ -69,13 +69,6 @@ if (-f '/etc/stats.conf') {
 }
 
 
-###########
-# Cleanup #
-###########
-close($cpconfig_fh);
-close($statsconfig_fh);
-
-
 #######################################
 # Misc. checks for stupid user tricks #
 #######################################
@@ -185,6 +178,13 @@ if (! $user) {
 print "\n";
 
 
+###########
+# Cleanup #
+###########
+close($cpconfig_fh);
+close($statsconfig_fh);
+
+
 ##############
 ## Functions #
 ##############
@@ -287,13 +287,12 @@ sub UserAllowed {
 	if (%stats_settings) {
 		my $user = shift;
 		# if the user is set to pick stats, or all users are set to pick stats, and stats.conf has good permissions, then print yes. Otherwise, if the user is set to pick stats and stats.conf has bad permissions, then print no, else print no.
-		my $allowall = `grep \"ALLOWALL=yes\" /etc/stats.conf`;
-		if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/ or $stats_settings{'ALLOWALL'}) {
-			my $statsconf = `find /etc/stats.conf -perm 644`;
-			if ($statsconf) {
+		my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
+		if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/ or $stats_settings{'ALLOWALL'} eq 'yes') {
+			if ($mode eq '0644') {
 				print DARK GREEN "Yes\n";
 			} 
-		} elsif ($stats_settings{'VALIDUSERS'} =~ $user and ! `find /etc/stats.conf -perm 644`) {
+		} elsif ($stats_settings{'VALIDUSERS'} =~ $user and $mode ne '0644') {
 			print BOLD RED "Yes\n";
 			print "\n";
 			print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause user $user to not be able to choose log programs in cPanel, however, the user will still show the ability to choose log programs. ***\n";
