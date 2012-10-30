@@ -9,7 +9,7 @@ $Term::ANSIColor::AUTORESET = 1;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.2;
+my $version = 0.3;
 
 
 ##################################################################################
@@ -46,16 +46,20 @@ open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
 ###################################
 
 # From /var/cpanel/cpanel.config, read the file and put the settings into an array to use later
-my @cycle_hours;
-my @bwcycle_hours;
+my %config_settings;
 while (<$cpconfig_fh>) {
-	if ($_ =~ m/^cycle_hours/) {
-		chomp(@cycle_hours = split('=' , $_));
-	}
-	if ($_ =~ m/^bwcycle/) {
-		chomp(@bwcycle_hours = split('=' , $_));
+	chomp(my $param = $_);
+	my ($option , $value) = split('=' , $param); 
+	if (defined($value)) {
+		$config_settings{$option} = $value;
 	}
 }
+
+
+###########
+# Cleanup #
+###########
+close($cpconfig_fh);
 
 
 #######################################
@@ -167,12 +171,6 @@ if (! $user) {
 print "\n";
 
 
-###########
-# Cleanup #
-###########
-close($cpconfig_fh);
-
-
 ##############
 ## Functions #
 ##############
@@ -208,9 +206,8 @@ sub BlackedHours {
 
 sub LogsRunEvery {
 # Show how often stats are set to ptocess
-# Grab cycle_hours and store result in $hours
-	if ($cycle_hours[1]) {
-		return $cycle_hours[1];
+	if ($config_settings{'cycle_hours'}) {
+		return $config_settings{'cycle_hours'};
 	} else {
 		return 24;
 	}
@@ -218,9 +215,8 @@ sub LogsRunEvery {
 
 sub BandwidthRunsEvery {
 # Show how often bandwidth is set to process
-# Grab bwcycle= and store result in $hours
-	if ($bwcycle_hours[1]) {
-		return $bwcycle_hours[1];
+	if ($config_settings{'bwcycle'}) {
+		return $config_settings{'bwcycle'};
 	} else {
 		return 2;
 	}
@@ -228,11 +224,10 @@ sub BandwidthRunsEvery {
 
 sub IsAvailable {
 # See if the stats program is disabled in tweak settings
-# greps for the stats prog name in cpanel.config and removes output up to the = sign
 	my $prog = shift;
-	chomp(my $disabled = `(grep "skip${prog}=" /var/cpanel/cpanel.config | sed 's/.*=//')`);
+	$prog = "skip" . $prog;
 
-	if ($disabled eq 1 or $disabled eq "") {
+	if ($config_settings{$prog} eq 1 or $config_settings{$prog} eq "") {
 		return BOLD RED "Disabled";
 	} else {
 		return DARK GREEN "Available to Users";
@@ -240,22 +235,23 @@ sub IsAvailable {
 }
 
 sub IsDefaultOn {
-# Make sure we're looking for the stats program in upper case, and display if the stats program is seto to active by default or not
-	my $arg = shift;
+# Make sure we're looking for the stats program in upper case, and display if the stats program is set to to active by default or not
+	my $prog = shift;
 	if (-f '/etc/stats.conf') {
-		chomp(my $prog = `echo $arg | tr "[:lower:]" "[:upper:]"`);
 		chomp(my $isdefined = `egrep "DEFAULTGENS=" /etc/stats.conf`);
 		chomp(my $ison = `egrep "DEFAULTGENS=.*${prog}" /etc/stats.conf`);
-		if ($isdefined eq "") {
+		if ($isdefined eq "") { # If no DEFAULTGENS in /etc/stats.conf
 			return DARK GREEN "On";
 		} else {
-			if ($ison eq "") {
+			if ($ison eq "") { # Else it is there but the specific prog name isn't in the DEFAULTGENS line
+				return BOLD RED "Off";
+		} elsif ($ison and &IsAvailable(lc($prog)) =~ 'Disabled') { # Else, if the prog is in DEFAULTGENS (meaning it was set to Active by default, but the prog was then Disabled
 				return BOLD RED "Off";
 			} else {
 				return DARK GREEN "On";
 			}
 		}
-	} else {
+	} else { # Stats haven't been customized at all in WHM, so no stats.conf yet
 		return DARK GREEN "On";
 	}
 }	
