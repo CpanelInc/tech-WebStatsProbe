@@ -41,6 +41,12 @@ open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
 	or die "Could not open cpanel.config, $!\n";
 open(my $statsconfig_fh , '<' , '/etc/stats.conf');
 
+my $cpuser_fh;
+if ($user) {
+	open($cpuser_fh , '<' , "/var/cpanel/users/$user")
+		or die "Could not open /var/cpanel//users/$user, $!\n";
+}
+
 
 ###################################
 # Gather Values For Later Sub Use #
@@ -56,7 +62,6 @@ while (<$cpconfig_fh>) {
 	}
 }
 
-# From /etc/stats.conf
 my %stats_settings;
 if (-f '/etc/stats.conf') {
 	while (<$statsconfig_fh>) {
@@ -64,6 +69,19 @@ if (-f '/etc/stats.conf') {
 		my($option , $value) = split('=' , $param);
 		if (defined($value)) {
 			$stats_settings{$option} = $value;
+		}
+	}
+}
+
+my %cpuser_settings;
+if ($user) {
+	if (-f "/var/cpanel/users/$user") {
+		while (<$cpuser_fh>) {
+			chomp(my $param = $_);
+			my($option , $value) = split('=' , $param);
+			if (defined($value)) {
+				$cpuser_settings{$option} = $value;
+			}
 		}
 	}
 }
@@ -183,7 +201,9 @@ print "\n";
 ###########
 close($cpconfig_fh);
 close($statsconfig_fh);
-
+if ($user) {
+	close($cpuser_fh);
+}
 
 ##############
 ## Functions #
@@ -249,8 +269,7 @@ sub IsAvailable {
 
 sub IsDefaultOn {
 # Make sure we're looking for the stats program in upper case, and display if the stats program is set to to active by default or not
-	my $prog = shift;
-	$prog = uc($prog);
+	my $prog = uc(shift);
  	if (%stats_settings) {
 		if (! $stats_settings{'DEFAULTGENS'}) { # If no DEFAULTGENS in /etc/stats.conf
 			return DARK GREEN "On";
@@ -462,15 +481,14 @@ sub WhoCanPick {
 }
 
 sub GetEnabledDoms {
-	my $prog = shift;
-	chomp($prog = `echo $prog | tr "[:lower:]" "[:upper:]"`);
+	my $prog = uc(shift);
 	my $user = shift;
 	chomp(my $homedir = `grep $user /etc/passwd | cut -d: -f6 | egrep $user\$`);
 	chomp(my @alldoms = `egrep "^DNS[0-9]{0,3}=" /var/cpanel/users/$user | cut -f2 -d=`);
 	if (-e "$homedir/tmp/stats.conf") {
 		my @domains;
 		foreach my $dom (@alldoms) {
-			chomp(my $capsdom = `echo $dom | tr "[:lower:]" "[:upper:]"`);
+			my $capsdom = uc($dom);
 			chomp(my $domsetting = `grep "$prog-$capsdom=" $homedir/tmp/stats.conf | sed 's/'$prog'-//' | tr "[:upper:]" "[:lower:]"`);
 			if ($domsetting eq "") {
 				$dom .= "=no";
@@ -514,7 +532,6 @@ sub DumpDomainConfig {
 	} else {
 		print DARK GREEN "CAN PICK" , BOLD WHITE "(Per-Domain Config Listed Below)\n";
 		foreach my $dom (@doms) {
-			#print "  $dom\n";
 			my ($domain , $enabled) = split ('=' , $dom); 
 			print "  $domain = ";
 			if ($enabled eq 'yes') {
@@ -527,7 +544,7 @@ sub DumpDomainConfig {
 }
 
 sub IsBlocked {
-	my $prog = shift;
+	my $prog = uc(shift);
 	my $user = shift;
 
 # This first looks to see if STATGENS exists in the user file.
@@ -535,10 +552,9 @@ sub IsBlocked {
 # Then see if that line contains the stats program being passed to the function. 
 # If it does contain the stats program then that means that program was blocked for that user in WHM at:
 # Main >> Server Configuration >> Statistics Software Configuration >> User Permissions >> Choose Users >> Choose Specific Stats Programs for
-	chomp(my $statprog = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//' | tr '[:upper:]' '[:lower:]'`);
-	if ($statprog and $statprog !~ $prog) {
-		print BOLD RED "Blocked\n";
+	if ($cpuser_settings{'STATGENS'} and $cpuser_settings{'STATGENS'} !~ $prog) {
 		`touch /tmp/blockedprog`;
+		return 'Blocked';
 	}
 }
 
@@ -549,8 +565,8 @@ sub WillRunForUser {
 	if (&IsAvailable($prog) =~ 'Disabled') {
 		print BOLD RED "NO DOMAINS" , BOLD WHITE ":: $prog is disabled server wide\n";
 	# if the stats prog is blocked by the admin 
-	} elsif (&IsBlocked($prog , $user) =~ 'Blocked') {
-		print BOLD RED "BLOCKED" , ":: $prog is blocked by the administrator for this user\n";
+	} elsif (&IsBlocked($prog , $user) eq 'Blocked') {
+		print BOLD RED "BLOCKED" , BOLD WHITE ":: $prog is blocked by the administrator for this user\n";
 	} else {
 		# If the prog is off, then..
 		if (&IsDefaultOn($prog) =~ 'Off') {
