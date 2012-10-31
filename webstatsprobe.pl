@@ -552,9 +552,12 @@ sub IsBlocked {
 # Then see if that line contains the stats program being passed to the function. 
 # If it does contain the stats program then that means that program was blocked for that user in WHM at:
 # Main >> Server Configuration >> Statistics Software Configuration >> User Permissions >> Choose Users >> Choose Specific Stats Programs for
+	#chomp(my $statprog = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//' | tr '[:upper:]' '[:lower:]'`);
 	if ($cpuser_settings{'STATGENS'} and $cpuser_settings{'STATGENS'} !~ $prog) {
 		`touch /tmp/blockedprog`;
 		return 'Blocked';
+	} else {
+		return "";
 	}
 }
 
