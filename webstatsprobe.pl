@@ -9,7 +9,7 @@ $Term::ANSIColor::AUTORESET = 1;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.3;
+my $version = 0.4;
 
 
 ##################################################################################
@@ -250,6 +250,7 @@ sub IsAvailable {
 sub IsDefaultOn {
 # Make sure we're looking for the stats program in upper case, and display if the stats program is set to to active by default or not
 	my $prog = shift;
+	$prog = uc($prog);
  	if (%stats_settings) {
 		if (! $stats_settings{'DEFAULTGENS'}) { # If no DEFAULTGENS in /etc/stats.conf
 			return DARK GREEN "On";
@@ -309,7 +310,7 @@ sub UserAllowedRegex {
 # This function is only needed because the color codes in the yes/no output in UserAllowed() don't work with the expected yes/no output from running that function in GetEnabledDoms().
 	if (%stats_settings) {
 		my $user = shift;
-		if ($stats_settings{'VALIDUSERS'} =~ $user) {
+		if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/) {
 			return "Yes";
 		} else {
 			return "No";
@@ -361,12 +362,16 @@ sub UserKeepUp {
 	chomp(my $interval = &LogsRunEvery * 60 * 60);
 	my $time = time();
 	my $file = "/var/cpanel/lastrun/$user/stats";
-	my $mtime = (stat($file))[9];
-	my $duration = $time - $mtime;
-	if ($duration > $interval) {
-		return BOLD RED "No";
+	if (-f $file) { # necessary as as file won't exist on a new user
+		my $mtime = (stat($file))[9];
+		my $duration = $time - $mtime;
+		if ($duration > $interval) {
+			return BOLD RED "No";
+		} else {
+			return DARK GREEN "Yes";
+		}
 	} else {
-		return DARK GREEN "Yes";
+		return BOLD RED "Hasn't processed yet";
 	}
 }
 
@@ -377,12 +382,16 @@ sub BwUserKeepUp {
 	chomp(my $interval = &BandwidthRunsEvery * 60 * 60);
 	my $time = time();
 	my $file = "/var/cpanel/lastrun/$user/bandwidth";
-	my $mtime = (stat($file))[9];
-	my $duration = $time - $mtime;
-	if ($duration > $interval) {
-		return BOLD RED "No";
+	if (-f $file) { # nessessary as file won't exist on a new user
+		my $mtime = (stat($file))[9];
+		my $duration = $time - $mtime;
+		if ($duration > $interval) {
+			return BOLD RED "No";
+		} else {
+			return DARK GREEN "Yes";
+		}
 	} else {
-		return DARK GREEN "Yes";
+		return BOLD RED "Hasn't been processed yet";
 	}
 }
 
@@ -435,21 +444,16 @@ sub HttpdConf {
 
 sub WhoCanPick {
 # Display users who have been specified to choose stats programs
-	if (-e '/etc/stats.conf') {
-		chomp(my $users = `grep "VALIDUSERS=" /etc/stats.conf | sed 's/.*=//'`);
-		if ($users eq "") {
-			print DARK GREEN "Nobody";
-		} else {
-			print DARK GREEN "$users";
-		}
-		if ($users) {
-			chomp(my $check = `find /etc/stats.conf -perm 644`);
-			if (! $check) {
+	if (%stats_settings) {
+		if ($stats_settings{'VALIDUSERS'}) {
+			print DARK GREEN $stats_settings{'VALIDUSERS'};
+			my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
+			if ($mode ne '0644') {
 				print "\n\n";
 				print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause users to not be able to choose log programs in cPanel. ***\n";
 			}
 		} else {
-			print DARK GREEN "$users";
+			print DARK GREEN "Nobody";
 		}
 	} else {
 		print DARK GREEN "Nobody";
@@ -561,7 +565,7 @@ sub WillRunForUser {
 					print "\t" , "$user " , BOLD RED "DOES NOT" , BOLD WHITE "have privs to enable $prog for domains\n";
 				}
 			} else {
-				# else, if the user can choose progs, show if prog is active or not for each domain
+				# else, AllAllowed is yes, so show if prog is active or not for each domain
 				&DumpDomainConfig($prog , $user);
 			}
 		} else {
