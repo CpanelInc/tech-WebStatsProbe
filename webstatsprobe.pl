@@ -414,8 +414,9 @@ sub BwLastRun {
 
 sub Awwwwstats {
 # Check to see if awstats.pl doesn't have correct permissions
-	my $check = `find /usr/local/cpanel/3rdparty/bin/awstats.pl -perm 0755`;
-	if (! $check) {
+	my $awstats = '/usr/local/cpanel/3rdparty/bin/awstats.pl';
+	my $mode = sprintf '%04o' , (stat $awstats)[2] & 07777;
+	if ($mode ne '0755') {
 		print "\n";
 		print BOLD RED "AWStats Problem = Yes\n";
 		print BOLD RED "/usr/local/cpanel/3rdparty/awstats.pl is not 755 permissions!\n";
