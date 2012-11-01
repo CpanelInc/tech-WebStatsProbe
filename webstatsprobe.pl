@@ -9,7 +9,7 @@ $Term::ANSIColor::AUTORESET = 1;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.4;
+my $version = 0.5;
 
 
 ##################################################################################
@@ -38,14 +38,15 @@ foreach my $arg (@ARGV) {
 #####################
 
 open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
-	or die "Could not open cpanel.config, $!\n";
-open(my $statsconfig_fh , '<' , '/etc/stats.conf');
-
+	or die "Could not open /var/cpanel/cpanel.config, $!\n";
+open(my $statsconfig_fh , '<' , '/etc/stats.conf'); # no or here as stats.conf won't exit if stats config not changed in WHM
 my $cpuser_fh;
 if ($user) {
 	open($cpuser_fh , '<' , "/var/cpanel/users/$user")
 		or die "Could not open /var/cpanel//users/$user, $!\n";
 }
+open(my $cpversion_fh , '<' , '/usr/local/cpanel/version')
+	or die "Could not open /usr/local/cpanel/version, $!\n"; 
 
 
 ###################################
@@ -204,6 +205,8 @@ close($statsconfig_fh);
 if ($user) {
 	close($cpuser_fh);
 }
+close($cpversion_fh);
+
 
 ##############
 ## Functions #
@@ -602,11 +605,14 @@ sub WillRunForUser {
 
 sub CanRunLogaholic {
 # Check if cPanel is >= 11.31 (when Logaholic was added).
-	chomp(my $version = `cut -f1,2 -d. /usr/local/cpanel/version | sed 's/\\.//g'`);
-	if ($version ge '1131') {
-		return "Yes";
-	} else {
-		return "No";
+	while (<$cpversion_fh>) {
+		my $version = $_;
+		$version =~ s/\.//g; # remove the periods to compare it lexally an dnot numerically
+		if ($version ge '1131') {
+			return "Yes";
+		} else {
+			return "No";
+		}
 	}
 }
 
