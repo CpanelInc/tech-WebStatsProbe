@@ -618,7 +618,12 @@ sub DomainResolves {
 	my $notbound;
 	chomp(my $bound = `/sbin/ifconfig`);
 	# Grab domain list from the cPanel user file
-	chomp(my @domlist = `grep ^DNS /var/cpanel/users/$user | cut -f2 -d=`);
+	my @domlist;
+	while (my($key , $value) = each %cpuser_settings) {
+		if ($key =~ /^DNS/) {
+			push (@domlist , $value);
+		}
+	}
 	# For each domain in the list we see if google's public DNS can resolve the IP
 	foreach my $name (@domlist) {
 		chomp(my $ip = `dig \@8.8.8.8 +short $name`);
