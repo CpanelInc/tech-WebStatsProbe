@@ -9,7 +9,7 @@ $Term::ANSIColor::AUTORESET = 1;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.5;
+my $version = 0.6;
 
 
 ##################################################################################
@@ -80,9 +80,9 @@ if ($user) {
 		while (<$cpuser_fh>) {
 			chomp(my $param = $_);
 			my($option , $value) = split('=' , $param);
-			if (defined($value)) {
-				$cpuser_settings{$option} = $value;
-			}
+			#if (defined($value)) {
+			$cpuser_settings{$option} = $value;
+			#}
 		}
 	}
 }
@@ -144,9 +144,7 @@ if (! $user) {
 		# applications for the specific users in WHM. If STATGENS exists then we test to see if
 		# there are any stats programs listed after STATGENS=. If not then the admin has blocked
 		# all stats programs. Yes, we have seen someone do this before.
-		chomp(my $statgens = `grep STATGENS /var/cpanel/users/$user`);
-		chomp(my $statgens_list = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//'`);
-		if ($statgens  and ! $statgens_list) {
+		if (defined($cpuser_settings{'STATGENS'}) and $cpuser_settings{'STATGENS'} eq "") {
 			print BOLD RED "*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\n\n";
 		}
 		# Check if each of the user domains resolve to IP on the server
@@ -555,9 +553,9 @@ sub IsBlocked {
 # Then see if that line contains the stats program being passed to the function. 
 # If it does contain the stats program then that means that program was blocked for that user in WHM at:
 # Main >> Server Configuration >> Statistics Software Configuration >> User Permissions >> Choose Users >> Choose Specific Stats Programs for
-	#chomp(my $statprog = `grep STATGENS /var/cpanel/users/$user | sed 's/.*=//' | tr '[:upper:]' '[:lower:]'`);
 	if ($cpuser_settings{'STATGENS'} and $cpuser_settings{'STATGENS'} !~ $prog) {
-		`touch /tmp/blockedprog`;
+		open ('blockedprog', '>' , '/tmp/blockedprog') or die "Can't create /tmp/blockedprog: $!";
+		close ('blockedprog');
 		return 'Blocked';
 	} else {
 		return "";
