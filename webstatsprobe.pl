@@ -133,6 +133,7 @@ if (! $user) {
 	print "ANALOG: " , &IsAvailable('analog') , " (Active by Default: " , &IsDefaultOn('ANALOG') , ")\n";
 	print "AWSTATS: " , &IsAvailable('awstats') , " (Active by Default: " , &IsDefaultOn('AWSTATS') , ")\n";
 	print "WEBALIZER " , &IsAvailable('webalizer') , " (Active by Default: " , &IsDefaultOn('WEBALIZER') , ")\n";
+
 	if (&CanRunLogaholic eq 'Yes') {
 		print "LOGAHOLIC: " , &IsAvailable('logaholic') , " (Active by Default: " , &IsDefaultOn('LOGAHOLIC') , ")\n";
 	}
@@ -209,11 +210,9 @@ print "\n";
 # Cleanup #
 ###########
 close($cpconfig_fh);
-close($statsconfig_fh) unless (! $statsconfig_fh);
+close($statsconfig_fh) if ($statsconfig_fh); # If there was no /etc/stats.conf, then no need to close the FH for it.
 close($cpversion_fh);
-if ($user) {
-	close($cpuser_fh);
-}
+close($cpuser_fh) if ($user); # If $user wasn't supplied as an arg, then no need to close FH for it..
 
 
 ##############
@@ -353,6 +352,7 @@ sub UserAllowedRegex {
 sub LogDRunning {
 # Check if cpanellogd is running. Null output from --check means it is. 
 	my $check = `/scripts/restartsrv_cpanellogd --check`;
+
 	if (! $check) {
 		return DARK GREEN "Running";
 	} else {
@@ -366,6 +366,7 @@ sub KeepingUp {
 	chomp(my $interval = &LogsRunEvery * 60 * 60);
 	my $time = time();
 	my @filelist = </var/cpanel/lastrun/*/stats>;
+
 	foreach my $file (@filelist) {
 		my $mtime = (stat($file))[9];
 		my $duration = $time - $mtime;
@@ -392,6 +393,7 @@ sub UserKeepUp {
 	chomp(my $interval = &LogsRunEvery * 60 * 60);
 	my $time = time();
 	my $file = "/var/cpanel/lastrun/$user/stats";
+
 	if (-f $file) { # necessary as as file won't exist on a new user
 		my $mtime = (stat($file))[9];
 		my $duration = $time - $mtime;
@@ -412,6 +414,7 @@ sub BwUserKeepUp {
 	chomp(my $interval = &BandwidthRunsEvery * 60 * 60);
 	my $time = time();
 	my $file = "/var/cpanel/lastrun/$user/bandwidth";
+
 	if (-f $file) { # nessessary as file won't exist on a new user
 		my $mtime = (stat($file))[9];
 		my $duration = $time - $mtime;
@@ -429,6 +432,7 @@ sub LastRun {
 	# Display when the user's stats were last ran
 	my $user = shift;
 	my $file = "/var/cpanel/lastrun/$user/stats";
+
 	if (-f $file) {
 		my $mtime = (stat($file))[9];
 		$mtime = localtime($mtime);
@@ -442,6 +446,7 @@ sub BwLastRun {
 # Display when the user's bandwidth processing was last ran
 	my $user = shift;
 	my $file = "/var/cpanel/lastrun/$user/bandwidth";
+
 	if (-f $file) {
 		my $mtime = (stat($file))[9];
 		$mtime = localtime($mtime);
@@ -455,6 +460,7 @@ sub Awwwwstats {
 # Check to see if awstats.pl doesn't have correct permissions
 	my $awstats = '/usr/local/cpanel/3rdparty/bin/awstats.pl';
 	my $mode = sprintf '%04o' , (stat $awstats)[2] & 07777;
+
 	if ($mode ne '0755') {
 		print "\n";
 		print BOLD RED "AWStats Problem = Yes\n";
@@ -465,6 +471,7 @@ sub Awwwwstats {
 sub HttpdConf {
 # No stats if Apache conf has problems, so check syntax
 	my $check = `/usr/local/apache/bin/apachectl configtest 2>&1`;
+
 	if ($check =~ 'Syntax OK') {
 		return DARK GREEN "Syntax OK";
 	} else {
@@ -495,6 +502,7 @@ sub GetEnabledDoms {
 	my $prog = uc(shift);
 	my $user = shift;
 	my @alldoms;
+
 	foreach my $param (%cpuser_settings) {
 		if (defined($param) and $param =~ /^DNS/) {
 			push (@alldoms, $cpuser_settings{$param});
@@ -539,6 +547,7 @@ sub DumpDomainConfig {
 	my $prog = shift;
 	my $user = shift;
 	my @doms = &GetEnabledDoms($prog, $user);
+
 	if (! @doms) {
 		print BOLD RED "NO DOMAINS" , BOLD WHITE ":: $prog is available but not active by default. $user " , DARK GREEN "DOES" , BOLD WHITE "have own privs to enable $prog for domains, but hasn't\n";
 	} else {
@@ -559,13 +568,11 @@ sub IsBlocked {
 	my $prog = uc(shift);
 	my $user = shift;
 
-# This first looks to see if STATGENS exists in the user file.
-# If it does then this means an admin override for the user in WHM
-# Then see if that line contains the stats program being passed to the function. 
-# If it does contain the stats program then that means that program was blocked for that user in WHM at:
+# This first looks to see if STATGENS exists in the user file and STATGENS does NOT contain $prog.
+# If $prog is not found then this means $prog is blocked by the admin in WHM at:
 # Main >> Server Configuration >> Statistics Software Configuration >> User Permissions >> Choose Users >> Choose Specific Stats Programs for
 	if ($cpuser_settings{'STATGENS'} and $cpuser_settings{'STATGENS'} !~ $prog) {
-		open ('blockedprog', '>' , '/tmp/blockedprog') or die "Can't create /tmp/blockedprog: $!";
+		open ('blockedprog', '>' , '/tmp/blockedprog') or die "Can't create /tmp/blockedprog: $!"; # create 0 byte touch file
 		close ('blockedprog');
 		return 'Blocked';
 	} else {
@@ -576,6 +583,7 @@ sub IsBlocked {
 sub WillRunForUser {
 	my $prog = shift;
 	my $user = shift;
+
 	# If the stats prog is not set as available in WHM
 	if (&IsAvailable($prog) =~ 'Disabled') {
 		print BOLD RED "NO DOMAINS" , BOLD WHITE ":: $prog is disabled server wide\n";
@@ -616,7 +624,7 @@ sub CanRunLogaholic {
 # Check if cPanel is >= 11.31 (when Logaholic was added).
 	while (<$cpversion_fh>) {
 		my $version = $_;
-		$version =~ s/\.//g; # remove the periods to compare it lexally an dnot numerically
+		$version =~ s/\.//g; # remove the periods to compare it lexally and not numerically
 		if ($version ge '1131') {
 			return "Yes";
 		} else {
@@ -632,13 +640,15 @@ sub DomainResolves {
 	my $timedout;
 	my $notbound;
 	chomp(my $bound = `/sbin/ifconfig`);
+
 	# Grab domain list from the cPanel user file
 	my @domlist;
-	while (my($key , $value) = each %cpuser_settings) {
+	while (my ($key , $value) = each %cpuser_settings) {
 		if ($key =~ /^DNS/) {
 			push (@domlist , $value);
 		}
 	}
+	
 	# For each domain in the list we see if google's public DNS can resolve the IP
 	foreach my $name (@domlist) {
 		chomp(my $ip = `dig \@8.8.8.8 +short $name`);
@@ -654,6 +664,7 @@ sub DomainResolves {
 		}
 	}
 	print "ALL DOMAINS RESOLVE TO SERVER: ";
+	
 	# If $donotresolve and $notbound and $timedout are null, meaning all lookups were successful
 	if (! $donotresolve and ! $notbound and ! $timedout) {
 		print DARK GREEN "Yes\n";
