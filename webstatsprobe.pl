@@ -4,12 +4,15 @@ use warnings;
 use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
+use Net::DNS;
+use File::HomeDir;
+
 
 ##########################
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.6;
+my $version = 0.7;
 
 
 ##################################################################################
@@ -18,7 +21,7 @@ my $version = 0.6;
 
 # Set defaults for positional parameters
 my $noquery = 1; # Default to doing DNS queries on user domains
-my $user = "";
+my $user;
 
 foreach my $arg (@ARGV) {
 	# if any of the arguments don't contain "--" then make that argument the user variable
@@ -39,14 +42,23 @@ foreach my $arg (@ARGV) {
 
 open(my $cpconfig_fh , '<' , '/var/cpanel/cpanel.config')
 	or die "Could not open /var/cpanel/cpanel.config, $!\n";
-open(my $statsconfig_fh , '<' , '/etc/stats.conf'); # no or here as stats.conf won't exit if stats config not changed in WHM
-my $cpuser_fh;
-if ($user) {
-	open($cpuser_fh , '<' , "/var/cpanel/users/$user")
-		or die "Could not open /var/cpanel//users/$user, $!\n";
-}
+
+open(my $statsconfig_fh , '<' , '/etc/stats.conf') if (-f "/etc/stats.conf"); # no die here as stats.conf won't exit if stats config not changed in WHM
+
 open(my $cpversion_fh , '<' , '/usr/local/cpanel/version')
 	or die "Could not open /usr/local/cpanel/version, $!\n"; 
+
+my $cpuser_fh;
+my $cpuser_stats_settings;
+if ($user) {
+	open($cpuser_fh , '<' , "/var/cpanel/users/$user")
+		or die "Could not open /var/cpanel/users/$user, $!\n";
+
+	my $homedir = File::HomeDir->users_home($user);
+	if (-f "$homedir/tmp/stats.conf") {
+		$cpuser_stats_settings = `cat $homedir/tmp/stats.conf`;
+	}
+}
 
 
 ###################################
@@ -64,7 +76,7 @@ while (<$cpconfig_fh>) {
 }
 
 my %stats_settings;
-if (-f '/etc/stats.conf') {
+if ($statsconfig_fh) {
 	while (<$statsconfig_fh>) {
 		chomp(my $param = $_);
 		my($option , $value) = split('=' , $param);
@@ -75,14 +87,12 @@ if (-f '/etc/stats.conf') {
 }
 
 my %cpuser_settings;
-if ($user) {
-	if (-f "/var/cpanel/users/$user") {
-		while (<$cpuser_fh>) {
-			chomp(my $param = $_);
-			my($option , $value) = split('=' , $param);
-			#if (defined($value)) {
+if ($user and $cpuser_fh) {
+	while (<$cpuser_fh>) {
+		chomp(my $param = $_);
+		my($option , $value) = split('=' , $param);
+		if (defined($value)) {
 			$cpuser_settings{$option} = $value;
-			#}
 		}
 	}
 }
@@ -199,11 +209,11 @@ print "\n";
 # Cleanup #
 ###########
 close($cpconfig_fh);
-close($statsconfig_fh);
+close($statsconfig_fh) unless (! $statsconfig_fh);
+close($cpversion_fh);
 if ($user) {
 	close($cpuser_fh);
 }
-close($cpversion_fh);
 
 
 ##############
@@ -484,18 +494,21 @@ sub WhoCanPick {
 sub GetEnabledDoms {
 	my $prog = uc(shift);
 	my $user = shift;
-	chomp(my $homedir = `grep $user /etc/passwd | cut -d: -f6 | egrep $user\$`);
-	chomp(my @alldoms = `egrep "^DNS[0-9]{0,3}=" /var/cpanel/users/$user | cut -f2 -d=`);
-	if (-e "$homedir/tmp/stats.conf") {
+	my @alldoms;
+	foreach my $param (%cpuser_settings) {
+		if (defined($param) and $param =~ /^DNS/) {
+			push (@alldoms, $cpuser_settings{$param});
+		}
+	}
+
+	if ($cpuser_stats_settings) {
 		my @domains;
 		foreach my $dom (@alldoms) {
 			my $capsdom = uc($dom);
-			chomp(my $domsetting = `grep "$prog-$capsdom=" $homedir/tmp/stats.conf | sed 's/'$prog'-//' | tr "[:upper:]" "[:lower:]"`);
-			if ($domsetting eq "") {
-				$dom .= "=no";
-				push @domains, $dom;
+			if ($cpuser_stats_settings =~ "$prog-$capsdom=yes") {
+				push (@domains , "$dom=yes");
 			} else {
-			        push @domains, $domsetting;
+				push (@domains, "$dom=no");
 			}
 		}
 		return @domains;
@@ -507,17 +520,15 @@ sub GetEnabledDoms {
 		if ((&UserAllowedRegex($user) =~ 'Yes' or &AllAllowed =~ 'Yes') and (&IsDefaultOn($prog) =~ 'On')) {
 			my @domains;
 			foreach my $dom (@alldoms) {
-				chomp($dom);
 				$dom .= "=yes";
-				push @domains , "$dom";
+				push (@domains , $dom);
 			}
 			return @domains;
 		} else {
 			my @domains;
 			foreach my $dom (@alldoms) {
-				chomp($dom);
 				$dom .= "=no";
-				push @domains, $dom;
+				push (@domains, $dom);
 			}
 			return @domains;
 		}
