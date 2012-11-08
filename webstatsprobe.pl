@@ -341,7 +341,8 @@ sub IsDefaultOn {
 sub AllAllowed {
 # Display if per WHM all users are allowed to pick stats programs
     if (%stats_settings) {
-        if ($stats_settings{'ALLOWALL'} eq 'yes') {
+        if ($stats_settings{'ALLOWALL'}
+               and $stats_settings{'ALLOWALL'} eq 'yes') {
             return DARK GREEN "Yes";
         }
         elsif (! $stats_settings{'ALLOWALL'}
