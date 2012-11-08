@@ -12,7 +12,7 @@ use File::HomeDir;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.7;
+my $version = 0.8;
 
 
 ###########################################################
@@ -369,13 +369,15 @@ sub UserAllowed {
         # user is set to pick stats and stats.conf has bad permissions, then
         # print no, else print no.
         my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
-        if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/
-                or $stats_settings{'ALLOWALL'} eq 'yes') {
-            if ($mode eq '0644') {
-                print DARK GREEN "Yes\n";
-            } 
+        if (defined($stats_settings{'VALIDUSERS'})) {
+            if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/
+                    or $stats_settings{'ALLOWALL'} eq 'yes') {
+                if ($mode eq '0644') {
+                    print DARK GREEN "Yes\n";
+                } 
+            }
         } 
-        elsif ($stats_settings{'VALIDUSERS'} =~ $user and $mode ne '0644') {
+        elsif (defined($stats_settings{'VALIDUSERS'}) and $stats_settings{'VALIDUSERS'} =~ $user and $mode ne '0644') {
             print BOLD RED "Yes\n";
             print "\n";
             print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause user $user to not be able to choose log programs in cPanel, however, the user will still show the ability to choose log programs. ***\n";
@@ -396,7 +398,8 @@ sub UserAllowedRegex {
 # function in GetEnabledDoms().
     if (%stats_settings) {
         my $user = shift;
-        if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/) {
+        if ($stats_settings{'VALIDUSERS'} and
+                $stats_settings{'VALIDUSERS'} =~ /\b$user\b/) {
             return "Yes";
         }
         else {
