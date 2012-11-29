@@ -12,7 +12,7 @@ use File::HomeDir;
 # cPanel, Inc.           #
 ##########################
 
-my $version = 0.8;
+my $version = 0.9;
 
 
 ###########################################################
@@ -485,7 +485,8 @@ sub BwUserKeepUp {
     my $time = time();
     my $file = "/var/cpanel/lastrun/$user/bandwidth";
 
-    if (-f $file) { # nessessary as file won't exist on a new user
+    # Nessessary as file won't exist on a new user
+    if (-f $file) {
         my $mtime = (stat($file))[9];
         my $duration = $time - $mtime;
         if ($duration > $interval) {
@@ -582,7 +583,7 @@ sub GetEnabledDoms {
     my @alldoms;
 
     foreach my $param (%cpuser_settings) {
-        if (defined($param) and $param =~ /^DNS/) {
+        if (defined($param) and $param =~ /\ADNS/) {  # If $param has a value and the line starts with DNS
             push (@alldoms, $cpuser_settings{$param});
         }
     }
@@ -736,7 +737,7 @@ sub CanRunLogaholic {
 # Check if cPanel is >= 11.31 (when Logaholic was added).
     while (<$cpversion_fh>) {
         my $version = $_;
-        $version =~ s/\.//g; # remove the periods to compare it lexally
+        $version =~ s/\.//g; # remove the periods to compare it lexically
         if ($version ge '1131') {
             return "Yes";
         }
@@ -758,7 +759,7 @@ sub DomainResolves {
     # Grab domain list from the cPanel user file
     my @domlist;
     while (my ($key , $value) = each %cpuser_settings) {
-        if ($key =~ /^DNS/) {
+        if ($key =~ /\ADNS/) { # If $key line starts with DNS
             push (@domlist , $value);
         }
     }
