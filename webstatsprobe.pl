@@ -1,4 +1,14 @@
-#!/usr/local/cpanel/3rdparty/bin/perl
+#!/bin/sh
+eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel/3rdparty/bin/perl -x -- $0 ${1+"$@"}; else exec /usr/bin/perl -x $0 ${1+"$@"}; fi;'
+    if 0;
+
+#!/usr/bin/perl
+# Copyright(c) 2012 cPanel, Inc.
+# All rights Reserved.
+# copyright@cpanel.net
+# http://cpanel.net
+# Unauthorized copying is prohibited
+
 
 use warnings;
 use strict;
@@ -7,11 +17,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-##########################
-# cPanel, Inc.           #
-##########################
-
-my $version = 0.9;
+my $version = 1.0;
 
 
 ###########################################################
