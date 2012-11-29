@@ -4,7 +4,6 @@ use warnings;
 use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
-use Net::DNS;
 use File::HomeDir;
 
 
