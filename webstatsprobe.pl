@@ -9,6 +9,8 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
+# Tested on cPanel 11.30 - 11.36
+
 
 use warnings;
 use strict;
@@ -17,7 +19,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = 1.0;
+my $version = "1.0";
 
 
 ###########################################################
