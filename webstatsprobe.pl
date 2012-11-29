@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/cpanel/3rdparty/bin/perl
 
 use warnings;
 use strict;
@@ -118,13 +118,13 @@ if (! $user) {
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
     print "\n";
-    print DARK CYAN "[ Web Stats Probe -v$version - Results For:", BOLD YELLOW "System", DARK CYAN "]\n";
+    print DARK CYAN "[ Web Stats Probe -v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
     print "CPANELLOGD: " , LogDRunning() , "\n";
     print "HTTPD CONF: " , HttpdConf() , "\n";
     print "BLACKED OUT: " , BlackedHours() , "\n";
-    print "LOG PROCESSING RUNS EVERY: ", DARK GREEN LogsRunEvery() , "hours\n";
-    print "BANDWIDTH PROCESSING RUNS EVERY: ", DARK GREEN BandwidthRunsEvery() , "hours\n";
+    print "LOG PROCESSING RUNS EVERY: ", DARK GREEN LogsRunEvery() , " hours\n";
+    print "BANDWIDTH PROCESSING RUNS EVERY: ", DARK GREEN BandwidthRunsEvery() , " hours\n";
     print "KEEPING UP: " , KeepingUp() , "\n";
     print "CAN ALL USERS PICK: ";
     print AllAllowed() , "\n";
@@ -153,7 +153,7 @@ else {
             print "None\n";
         }
         print "\n";
-        print DARK CYAN "[ Web Stats Probe v$version - Results For:" , BOLD YELLOW $user , DARK CYAN "]\n";
+        print DARK CYAN "[ Web Stats Probe v$version - Results For: " , BOLD YELLOW $user , DARK CYAN " ]\n";
         print "\n";
         # Here we want to test and see if STATGENS is present in the cPanel
         # user file. If it is this means that the server admin has blocked out
@@ -250,16 +250,16 @@ sub BlackedHours {
             # If the amount of hours selected is 0, meaning no hours are blacked
             # out, then..
             if (scalar(@hours) == 0) {
-                return DARK GREEN "Never" ,
-                  BOLD WHITE "(Allowed Time:" ,
+                return DARK GREEN "Never " ,
+                  BOLD WHITE "(Allowed Time: " ,
                   DARK GREEN "24 hours" ,
                   BOLD WHITE ")";
             }
             else {
-                # If some horus are blacked out, print the value of @hours
+                # If some hours are blacked out, print the value of @hours
                 # (the blacked out hours).
-                return BOLD RED "$stats_settings{'BLACKHOURS'}" ,
-                  BOLD WHITE "(Allowed Time:",
+                return BOLD RED "$stats_settings{'BLACKHOURS'} " ,
+                  BOLD WHITE "(Allowed Time: ",
                   DARK GREEN "$allowed hours" , BOLD WHITE ")";
             }
         }
@@ -267,8 +267,8 @@ sub BlackedHours {
     else {
         # if /etc/stats.conf doesn't exist or does but BLACKHOURS not set, then
         # print "Never"
-        return DARK GREEN "Never" ,
-          BOLD WHITE "( Allowed Time:" ,
+        return DARK GREEN "Never " ,
+          BOLD WHITE "(Allowed Time: " ,
           DARK GREEN "24 hours" ,
           BOLD WHITE ")";
     }
@@ -635,11 +635,11 @@ sub DumpDomainConfig {
     if (! @doms) {
         print BOLD RED "NO DOMAINS" ,
           BOLD WHITE ":: $prog is available but not active by default. $user " ,
-          DARK GREEN "DOES" ,
+          DARK GREEN "DOES " ,
           BOLD WHITE "have own privs to enable $prog for domains, but hasn't\n";
     }
     else {
-        print DARK GREEN "CAN PICK" ,
+        print DARK GREEN "CAN PICK " ,
           BOLD WHITE "(Per-Domain Config Listed Below)\n";
         foreach my $dom (@doms) {
             my ($domain , $enabled) = split ('=' , $dom); 
@@ -680,7 +680,7 @@ sub WillRunForUser {
 
     # If the stats prog is not set as available in WHM
     if (IsAvailable($prog) =~ 'Disabled') {
-        print BOLD RED "NO DOMAINS" ,
+        print BOLD RED "NO DOMAINS " ,
           BOLD WHITE ":: $prog is disabled server wide\n";
     # if the stats prog is blocked by the admin 
     }
