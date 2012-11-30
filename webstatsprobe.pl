@@ -22,6 +22,14 @@ use File::HomeDir;
 my $version = "1.0";
 
 
+###################################################
+# Check to see if the calling user is root or not #
+###################################################
+if ($> != 0) {
+    die "This script needs to be ran as the root user\n";
+}
+
+
 ###########################################################
 # Parse positional parameters for flags and set variables #
 ###########################################################
@@ -241,7 +249,7 @@ close($cpuser_fh) if ($user);
 sub BlackedHours {
 # Get the blackout hours and display if stats can run within those hours
     if ($stats_settings{'BLACKHOURS'} and $stats_settings{'BLACKHOURS'} ne "") {
-        # Removes "BLACKHOURS=" and replace the , between numbers with a space
+        # Copy the blacked out hours into array @hours, splitting on ','
         my @hours = split(',' , $stats_settings{'BLACKHOURS'});
         
         # Subtract the amount of array indices (hours) from 24 to get how many
@@ -264,8 +272,7 @@ sub BlackedHours {
                   BOLD WHITE ")";
             }
             else {
-                # If some hours are blacked out, print the value of @hours
-                # (the blacked out hours).
+                # If some hours are blacked out, print the blacked out hours.
                 return BOLD RED "$stats_settings{'BLACKHOURS'} " ,
                   BOLD WHITE "(Allowed Time: ",
                   DARK GREEN "$allowed hours" , BOLD WHITE ")";
@@ -284,7 +291,8 @@ sub BlackedHours {
 
 
 sub LogsRunEvery {
-# Show how often stats are set to ptocess
+# Show how often stats are set to process, if value not set then return default
+# of 24.
     if ($config_settings{'cycle_hours'}) {
         return $config_settings{'cycle_hours'};
     }
@@ -294,7 +302,8 @@ sub LogsRunEvery {
 }
 
 sub BandwidthRunsEvery {
-# Show how often bandwidth is set to process
+# Show how often bandwidth is set to process, if value not set then return
+# default of 2.
     if ($config_settings{'bwcycle'}) {
         return $config_settings{'bwcycle'};
     }
@@ -304,7 +313,8 @@ sub BandwidthRunsEvery {
 }
 
 sub IsAvailable {
-# See if the stats program is disabled in tweak settings
+# See if the stats program is disabled in tweak settings, if so return Disabled
+# else return Available
     my $prog = shift;
     $prog = "skip" . $prog;
 
@@ -331,7 +341,7 @@ sub IsDefaultOn {
             }
             elsif ($stats_settings{'DEFAULTGENS'} =~ $prog
                 and IsAvailable(lc($prog)) =~ 'Disabled') { # Else, if the prog
-                #is in DEFAULTGENS (meaning it was set to Active by default,
+                # is in DEFAULTGENS (meaning it was set to Active by default,
                 # but the prog was then Disabled
                 return BOLD RED "Off";
             }
@@ -400,9 +410,10 @@ sub UserAllowed {
 }
 
 sub UserAllowedRegex {
-# This function is only needed because the color codes in the yes/no output in
-# UserAllowed() don't work with the expected yes/no output from running that
-# function in GetEnabledDoms().
+# This UserAllowed function is called by the main body and is necessary to
+# output the warning for stats.conf. This function however is needed when
+# only yes/no output is required by other functions which call it such as
+# GetEnabledDoms().
     if (%stats_settings) {
         my $user = shift;
         if ($stats_settings{'VALIDUSERS'} and
@@ -595,6 +606,8 @@ sub GetEnabledDoms {
         }
     }
 
+    # If $homedir/tmp/stats.conf exists then for each domain we want to see if
+    # $prog-domainname eq yes or no
     if ($cpuser_stats_settings) {
         my @domains;
         foreach my $dom (@alldoms) {
