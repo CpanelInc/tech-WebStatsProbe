@@ -248,7 +248,7 @@ close($cpuser_fh) if ($user);
 
 sub BlackedHours {
 # Get the blackout hours and display if stats can run within those hours
-    if ($stats_settings{'BLACKHOURS'} and $stats_settings{'BLACKHOURS'} ne "") {
+    if ($stats_settings{'BLACKHOURS'}) {
         # Copy the blacked out hours into array @hours, splitting on ','
         my @hours = split(',' , $stats_settings{'BLACKHOURS'});
         
