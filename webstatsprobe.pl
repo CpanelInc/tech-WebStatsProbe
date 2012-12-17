@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0";
+my $version = "1.0.1";
 
 
 ###################################################
@@ -37,7 +37,7 @@ if ($> != 0) {
 
 # Set defaults for positional parameters
 my $noquery = 1; # Default to doing DNS queries on user domains
-my $user;
+my $user = undef;
 
 foreach my $arg (@ARGV) {
     # if any of the arguments don't contain "--" then set user variable
@@ -51,6 +51,9 @@ foreach my $arg (@ARGV) {
         $noquery = 0;
     }
 }
+
+# Going to be used later by IsBlocked();
+my $blockedprog = 0;
 
 
 #####################
@@ -66,8 +69,7 @@ open(my $statsconfig_fh , '<' , '/etc/stats.conf')
 open(my $cpversion_fh , '<' , '/usr/local/cpanel/version')
     or die "Could not open /usr/local/cpanel/version, $!\n"; 
 
-my $cpuser_fh;
-my $cpuser_stats_settings;
+my ($cpuser_fh, $cpuser_stats_settings);
 if ($user) {
     open($cpuser_fh , '<' , "/var/cpanel/users/$user")
         or die "Could not open /var/cpanel/users/$user, $!\n";
@@ -130,7 +132,7 @@ Awwwwstats();
 ####################
 
 # No arg = general info on web stats setup
-if (! $user) {
+if (! defined($user)) {
     print "\n";
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
@@ -209,7 +211,7 @@ else {
             print "CAN PICK STATS: ";
             print UserAllowed($user);
         }
-        if (-e '/tmp/blockedprog') {
+        if ($blockedprog == 1) {
             print "\n";
             print BOLD RED "*** Webstatsprobe reports that one or more statsprograms are BLOCKED for the user by the server admin ***\n";
             print BOLD RED "To correct this issue in WHM, go to:\n";
@@ -217,7 +219,6 @@ else {
             print "Choose Users >> Choose Specific Stats Programs for\n";
             print "\n";
             print "To use the default setting of all apps available, remove the STATGENS line from the cPanel user file.\n";
-            unlink '/tmp/blockedprog'; 
         }
     }
     else {
@@ -240,7 +241,7 @@ close($cpconfig_fh);
 close($statsconfig_fh) if ($statsconfig_fh);
 close($cpversion_fh);
 # If $user wasn't supplied as an arg, then no need to close FH for it..
-close($cpuser_fh) if ($user);
+close($cpuser_fh) if (defined($user));
 
 
 ##############
@@ -447,7 +448,7 @@ sub KeepingUp {
 # (stats processing interval * 60 * 60), but only if that file is owned by a
 # current cPanel user
     my @outofdate;
-    chomp(my $interval = LogsRunEvery() * 60 * 60);
+    my $interval = LogsRunEvery() * 60 * 60;
     my $time = time();
     my @filelist = </var/cpanel/lastrun/*/stats>;
 
@@ -477,7 +478,7 @@ sub UserKeepUp {
 # $interval is running the return value of logsrunevery * 60 * 60 to get the
 # amount of seconds (default of 84400, or 24 hours)
     my $user = shift;
-    chomp(my $interval = LogsRunEvery() * 60 * 60);
+    my $interval = LogsRunEvery() * 60 * 60;
     my $time = time();
     my $file = "/var/cpanel/lastrun/$user/stats";
 
@@ -500,7 +501,7 @@ sub BwUserKeepUp {
     # $interval is running the return value of logsrunevery * 60 to get the
     # amount of minutes (default of 120, or 2 hours)
     my $user = shift;
-    chomp(my $interval = BandwidthRunsEvery() * 60 * 60);
+    my $interval = BandwidthRunsEvery() * 60 * 60;
     my $time = time();
     my $file = "/var/cpanel/lastrun/$user/bandwidth";
 
@@ -686,9 +687,7 @@ sub IsBlocked {
     # Statistics Software Configuration >> User Permissions >> Choose Users >>
     # Choose Specific Stats Programs for
     if ($cpuser_settings{'STATGENS'} and $cpuser_settings{'STATGENS'} !~ $prog) {
-        open ('blockedprog', '>' , '/tmp/blockedprog')
-            or die "Can't create /tmp/blockedprog: $!"; # create touch file
-        close ('blockedprog');
+        $blockedprog = 1;
         return 'Blocked';
     }
     else {
