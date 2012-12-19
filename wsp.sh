@@ -3,7 +3,7 @@
 # <= 0.5 Written by: Brian Oates
 # >= 0.6 by: Paul Trost
 
-version="1.9.2"
+version="1.9.3"
 
 # TODO
 # check if prog enabled and /home/user/tmp/$prog is missing
@@ -120,8 +120,8 @@ IsDefaultOn() {
 if [[ $stats_fh  ]]; then
 prog=$(echo ${1} | tr "[:lower:]" "[:upper:]")
 lcprog=$(echo ${1} | tr "[:upper:]" "[:lower:]")
-isdefined=$(echo "$cpconfig_fh" | grep "DEFAULTGENS=")
-ison=$(echo "$cpconfig_fh" | egrep "DEFAULTGENS=.*${prog}")
+isdefined=$(echo "$stats_fh" | grep "DEFAULTGENS=")
+ison=$(echo "$stats_fh" | egrep "DEFAULTGENS=.*${prog}")
 	if [[ -z "$isdefined" ]]; then
 		printf "%b\n" "\033[0;32mOn\033[0m"
 	else    
@@ -129,6 +129,8 @@ ison=$(echo "$cpconfig_fh" | egrep "DEFAULTGENS=.*${prog}")
 			printf "%b\n" "\033[1;31mOff\033[0m"
 		elif [[ "$ison" ]] && [[ $(IsAvailable "$lcprog") =~ 'Disabled' ]]; then
 			printf "%b\n" "\033[1;31mOff\033[0m"
+        elif [[ "$ison" ]] && [[ $isdefined =~ '0' ]]; then
+            printf "%b\n" "\033[1;31mOff\033[0m"
 		else
 			printf "%b\n" "\033[0;32mOn\033[0m"
 		fi
