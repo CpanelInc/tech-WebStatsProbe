@@ -333,7 +333,7 @@ sub IsDefaultOn {
 # the stats program is set to to active by default or not
     my $prog = uc(shift);
     if (%stats_settings) {
-        if (! $stats_settings{'DEFAULTGENS'}) { # If no DEFAULTGENS in /etc/stats.conf
+        if (! defined($stats_settings{'DEFAULTGENS'})) { # If no DEFAULTGENS in /etc/stats.conf
             return DARK GREEN "On";
         }
         else {
