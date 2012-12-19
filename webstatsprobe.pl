@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0.1";
+my $version = "1.0.2";
 
 
 ###################################################
