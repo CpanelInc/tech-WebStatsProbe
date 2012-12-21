@@ -162,11 +162,12 @@ UserAllowed() {
 if [[ $stats_fh ]]; then
 	user=\\b$1\\b
 	users=$(echo "$stats_fh" | grep VALIDUSERS | sed -e 's/.*=//' -e 's/,/ /g')
+    stats_fh_perms=$(stat -c %a $stats_fh)
 	# if the user is set to pick stats, or all users are set to pick stats, and stats.conf has good permissons, then print yes, otherwise
 	# if the user is set to pick stats and stats.conf has bad permissions, then print no, else print no.  
-	if ( [[ $users =~ $user ]] || [[ $stats_fh =~ "ALLOWALL=yes" ]] ) && [ $(find /etc/stats.conf -perm 644) ]; then
+	if ( [[ $users =~ $user ]] || [[ $stats_fh =~ "ALLOWALL=yes" ]] ) && [ $stats_fh_perms = 644 ]; then
 		printf "%b\n" "\033[0;32mYes\033[0m"
-	elif  [[ $users =~ $user ]] && [ -z $(find /etc/stats.conf -perm 644) ]; then
+	elif  [[ $users =~ $user ]] && [[ $stats_fh_perms != 644 ]]; then
 		printf "%b\n" "\033[1;31mYes\033[0m"
 		printf "\n"
 		printf "%b\n" "\033[1;31m*** /etc/stats.conf doesn't have permissions of 644. This will cause user $1 to not be able to choose log programs in cPanel, however, the user will still show ability to choose log programs. ***\033[0m"
@@ -329,7 +330,7 @@ if [ $stats_fh ]; then
 		printf "%b\n" "\033[0;32m$users\033[0m"
 	fi
 	if [[ "$users" ]]; then
-		check=$(find '/etc/stats.conf' -perm 644)
+		check=$(find $stats_fh -perm 644)
 		if [ -z "$check" ]; then
 			printf "%b\n"
 			printf "%b\n" "\033[1;31m*** /etc/stats.conf doesn't have permissions of 644. This will cause users to not be able to choose log programs in cPanel. ***\033[0m"
