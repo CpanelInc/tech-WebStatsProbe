@@ -69,19 +69,15 @@ open(my $statsconfig_fh , '<' , '/etc/stats.conf')
 open(my $cpversion_fh , '<' , '/usr/local/cpanel/version')
     or die "Could not open /usr/local/cpanel/version, $!\n"; 
 
-my ($cpuser_fh, $cpuser_stats_settings);
+my ($cpuser_fh, $cpuserstats_fh);
 if ($user) {
     open($cpuser_fh , '<' , "/var/cpanel/users/$user")
         or die "Could not open /var/cpanel/users/$user, $!\n";
 
     my $homedir = File::HomeDir::users_home($user);
     if (-f "$homedir/tmp/stats.conf") {
-	open(my $cpuser_stats_fh, '<' , "$homedir/tmp/stats.conf")
-		or die "Could not open '$homedir/tmp/stats.conf', $!\n";
-	while (<$cpuser_stats_fh>) {
-	    $cpuser_stats_settings .= $_;
-	}
-	close $cpuser_stats_fh;
+	    open($cpuserstats_fh, '<' , "$homedir/tmp/stats.conf")
+	    	or die "Could not open '$homedir/tmp/stats.conf', $!\n";
     }
 }
 
@@ -119,6 +115,17 @@ if ($user and $cpuser_fh) {
         my($option , $value) = split('=' , $param);
         if (defined($value)) {
             $cpuser_settings{$option} = $value;
+        }
+    }
+}
+
+my %cpuser_stats_settings;
+if ($user and $cpuserstats_fh) {
+    while (<$cpuserstats_fh>) {
+        chomp(my $param = $_);
+        my($option , $value) = split('=' , $param);
+        if (defined($value)) {
+            $cpuser_stats_settings{$option} = $value;
         }
     }
 }
@@ -245,8 +252,9 @@ close($cpconfig_fh);
 # If there was no /etc/stats.conf, then no need to close the FH for it.
 close($statsconfig_fh) if ($statsconfig_fh);
 close($cpversion_fh);
-# If $user wasn't supplied as an arg, then no need to close FH for it..
+# If $user wasn't supplied as an arg, then no need to close FHs for it..
 close($cpuser_fh) if (defined($user));
+close($cpuserstats_fh) if (defined($user));
 
 
 ##############
@@ -616,11 +624,11 @@ sub GetEnabledDoms {
 
     # If $homedir/tmp/stats.conf exists then for each domain we want to see if
     # $prog-domainname eq yes or no
-    if ($cpuser_stats_settings) {
+    if (%cpuser_stats_settings) {
         my @domains;
         foreach my $dom (@alldoms) {
             my $capsdom = uc($dom);
-            if ($cpuser_stats_settings =~ "$prog-$capsdom=yes") {
+            if ($cpuser_stats_settings{"$prog-$capsdom"} eq 'yes') {
                 push (@domains , "$dom=yes");
             }
             else {
