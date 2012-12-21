@@ -70,7 +70,7 @@ open(my $cpversion_fh , '<' , '/usr/local/cpanel/version')
     or die "Could not open /usr/local/cpanel/version, $!\n"; 
 
 my ($cpuser_fh, $cpuserstats_fh);
-if ($user) {
+if (defined($user)) {
     open($cpuser_fh , '<' , "/var/cpanel/users/$user")
         or die "Could not open /var/cpanel/users/$user, $!\n";
 
@@ -86,14 +86,16 @@ if ($user) {
 # Gather Values For Later Sub Use #
 ###################################
 
-# From /var/cpanel/cpanel.config, read the file and put the settings into an
-# array to use later
+# If file handles are available, put the settings into hashes to use later
+
 my %config_settings;
-while (<$cpconfig_fh>) {
-    chomp(my $param = $_);
-    my($option , $value) = split('=' , $param); 
-    if (defined($value)) {
-        $config_settings{$option} = $value;
+if ($cpconfig_fh) {
+    while (<$cpconfig_fh>) {
+        chomp(my $param = $_);
+        my($option , $value) = split('=' , $param); 
+        if (defined($value)) {
+            $config_settings{$option} = $value;
+        }
     }
 }
 
@@ -109,7 +111,7 @@ if ($statsconfig_fh) {
 }
 
 my %cpuser_settings;
-if ($user and $cpuser_fh) {
+if ($cpuser_fh) {
     while (<$cpuser_fh>) {
         chomp(my $param = $_);
         my($option , $value) = split('=' , $param);
@@ -120,7 +122,7 @@ if ($user and $cpuser_fh) {
 }
 
 my %cpuser_stats_settings;
-if ($user and $cpuserstats_fh) {
+if ($cpuserstats_fh) {
     while (<$cpuserstats_fh>) {
         chomp(my $param = $_);
         my($option , $value) = split('=' , $param);
