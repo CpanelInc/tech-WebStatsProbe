@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0.2";
+my $version = "1.0.3";
 
 
 ###################################################
@@ -74,9 +74,14 @@ if ($user) {
     open($cpuser_fh , '<' , "/var/cpanel/users/$user")
         or die "Could not open /var/cpanel/users/$user, $!\n";
 
-    my $homedir = File::HomeDir->users_home($user);
+    my $homedir = File::HomeDir::users_home($user);
     if (-f "$homedir/tmp/stats.conf") {
-        $cpuser_stats_settings = `cat $homedir/tmp/stats.conf`;
+	open(my $cpuser_stats_fh, '<' , "$homedir/tmp/stats.conf")
+		or die "Could not open '$homedir/tmp/stats.conf', $!\n";
+	while (<$cpuser_stats_fh>) {
+	    $cpuser_stats_settings .= $_;
+	}
+	close $cpuser_stats_fh;
     }
 }
 
@@ -333,12 +338,13 @@ sub IsDefaultOn {
 # the stats program is set to to active by default or not
     my $prog = uc(shift);
     if (%stats_settings) {
-        if (! defined($stats_settings{'DEFAULTGENS'})) { # If no DEFAULTGENS in /etc/stats.conf
+        if (! exists($stats_settings{'DEFAULTGENS'})) { # If no DEFAULTGENS in /etc/stats.conf
             return DARK GREEN "On";
         }
         else {
             if ($stats_settings{'DEFAULTGENS'} !~ $prog) { # Else it is there
                 # but the specific prog name isn't in the DEFAULTGENS line
+                # This also takes into account DEFAULTGENS=0 which means all progs set to not active by default
                 return BOLD RED "Off";
             }
             elsif ($stats_settings{'DEFAULTGENS'} =~ $prog
