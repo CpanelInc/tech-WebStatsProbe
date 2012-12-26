@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0.4";
+my $version = "1.0.5";
 
 
 ###################################################
@@ -256,7 +256,7 @@ close($statsconfig_fh) if ($statsconfig_fh);
 close($cpversion_fh);
 # If $user wasn't supplied as an arg, then no need to close FHs for it..
 close($cpuser_fh) if (defined($user));
-close($cpuserstats_fh) if (defined($user));
+close($cpuserstats_fh) if (defined($user) and defined($cpuserstats_fh));
 
 
 ##############
