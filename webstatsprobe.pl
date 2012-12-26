@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0.3";
+my $version = "1.0.4";
 
 
 ###################################################
@@ -36,7 +36,7 @@ if ($> != 0) {
 ###########################################################
 
 # Set defaults for positional parameters
-my $noquery = 1; # Default to doing DNS queries on user domains
+my $noquery = 0; # Default to doing DNS queries on user domains
 my $user = undef;
 
 foreach my $arg (@ARGV) {
@@ -48,7 +48,7 @@ foreach my $arg (@ARGV) {
     # noquery is used to turning off DNS lookups for user domains when
     # webstatsprobe called against a user
     if ($arg =~ '--noquery') {
-        $noquery = 0;
+        $noquery = 1;
     }
 }
 
@@ -176,10 +176,10 @@ if (! defined($user)) {
 else {
     # If called with a user argument, let's verify that user exists and display
     # the output
-    if (-e "/var/cpanel/users/$user" and -d "/var/cpanel/userdata/$user") {
+    if (-e $cpuser_fh and -d "/var/cpanel/userdata/$user") {
         print "\n";
         print "Available flags when running \"webstatsprobe <user>\"\n";
-        if ($noquery == 1) {
+        if ($noquery == 0) {
             print "--noquery (turns off DNS lookups for each user domain)\n"
         }
         else {
@@ -198,8 +198,8 @@ else {
             $cpuser_settings{'STATGENS'} eq "") {
             print BOLD RED "*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\n\n";
         }
-        # Check if each of the user domains resolve to IP on the server
-        if ($noquery != 0) {
+        # If --noquery wasn't specified, then check if each of the user domains resolve to IP on the server
+        if ($noquery == 0) {
             DomainResolves($user);
         }
         print "KEEPING UP (STATS): " , UserKeepUp($user) , " (Last Run: " , LastRun($user) , ")\n";
