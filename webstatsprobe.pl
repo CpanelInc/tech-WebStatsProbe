@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = "1.0.5";
+my $version = '1.0.5';
 
 
 ###################################################
@@ -151,7 +151,7 @@ if (! defined($user)) {
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
     print "\n";
-    print DARK CYAN "[ Web Stats Probe -v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
+    print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
     print "CPANELLOGD: " , LogDRunning() , "\n";
     print "HTTPD CONF: " , HttpdConf() , "\n";
@@ -252,7 +252,7 @@ print "\n";
 ###########
 close($cpconfig_fh);
 # If there was no /etc/stats.conf, then no need to close the FH for it.
-close($statsconfig_fh) if ($statsconfig_fh);
+close($statsconfig_fh) if (defined($statsconfig_fh));
 close($cpversion_fh);
 # If $user wasn't supplied as an arg, then no need to close FHs for it..
 close($cpuser_fh) if (defined($user));
