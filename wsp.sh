@@ -11,6 +11,15 @@ version="1.9.3"
 ## Changelog
 
 
+################################
+# Verify script called as root #
+################################
+
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
 # Set defaults for positional parameters
 noquery=1 # Default to doing DNS queries on user domains
 
