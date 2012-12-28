@@ -80,8 +80,8 @@ if (defined($user)) {
 	    	or die "Could not open '$homedir/tmp/stats.conf', $!\n";
     }
 
-    if (! -x '/usr/bin/dig') {
-	die "Dig is either missing or not executable, please investigate.\n";
+    if (! -x '/usr/bin/dig' and $noquery == 0) {
+	die "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
     }
 }
 
