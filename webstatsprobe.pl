@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = '1.0.7';
+my $version = '1.0.8';
 
 
 ###################################################
@@ -78,6 +78,10 @@ if (defined($user)) {
     if (-f "$homedir/tmp/stats.conf") {
 	    open($cpuserstats_fh, '<' , "$homedir/tmp/stats.conf")
 	    	or die "Could not open '$homedir/tmp/stats.conf', $!\n";
+    }
+
+    if (! -x '/usr/bin/dig') {
+	die "Dig is either missing or not executable, please investigate.\n";
     }
 }
 
@@ -677,7 +681,7 @@ sub DumpDomainConfig {
 
     if (! @doms) {
         print BOLD RED "NO DOMAINS" ,
-          BOLD WHITE ":: $prog is available but not active by default. $user " ,
+          BOLD WHITE " :: $prog is available but not active by default. $user " ,
           DARK GREEN "DOES " ,
           BOLD WHITE "have own privs to enable $prog for domains, but hasn't\n";
     }
@@ -744,9 +748,9 @@ sub WillRunForUser {
                     # active by default and user does not have privs to enable
                     # prog.
                     print BOLD RED "NO DOMAINS" ,
-                      BOLD WHITE ":: $prog is available, but not active by default\n";
+                      BOLD WHITE " :: $prog is available, but not active by default\n";
                     print "\t" , "$user " , BOLD RED "DOES NOT" ,
-                      BOLD WHITE "have privs to enable $prog for domains\n";
+                      BOLD WHITE " have privs to enable $prog for domains\n";
                 }
             }
             else {
