@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
 
-my $version = '1.0.6';
+my $version = '1.0.7';
 
 
 ###################################################
@@ -471,7 +471,11 @@ sub KeepingUp {
     foreach my $file (@filelist) {
         my $mtime = (stat($file))[9];
         my $duration = $time - $mtime;
-        chomp(my $user = `echo $file | cut -f5 -d/`);
+        my $user = $file;
+        # now let's remove '/var/cpanel/lastrun', then '/stats/' so we can
+        # get jut the username
+        $user =~ s/\/var\/cpanel\/lastrun\///;
+        $user =~ s/\/stats//;
         if ($duration > $interval) {
             if (-d "/var/cpanel/userdata/$user") {
                 my $olduser = `ls -la /var/cpanel/lastrun/$user/stats`;
