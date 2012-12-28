@@ -3,7 +3,7 @@
 # <= 0.5 Written by: Brian Oates
 # >= 0.6 by: Paul Trost
 
-version="1.9.3"
+version="1.9.4"
 
 # TODO
 # check if prog enabled and /home/user/tmp/$prog is missing
@@ -15,7 +15,7 @@ version="1.9.3"
 # Verify script called as root #
 ################################
 
-if [[ $EUID -ne 0 ]]; then
+if [[ "$EUID" -ne 0 ]]; then
     echo "This script must be run as root" 1>&2
     exit 1
 fi
@@ -26,12 +26,12 @@ noquery=1 # Default to doing DNS queries on user domains
 # Parse positional parameters for flags and set variables if argument is present
 for i in $@; do
 	# if any of the arguments don't contain "--" then make that argument the user variable
-	if [[ ! $i =~ \-\- ]]; then
+	if [[ ! "$i" =~ \-\- ]]; then
 		user=$i
 	fi
 
 	# noquery is used to turning off DNS lookups for user domains when webstatsprobe called against a user
-	if [[ $i =~ "--noquery" ]]; then
+	if [[ "$i" =~ "--noquery" ]]; then
 		noquery=0
 	fi
 done
@@ -51,7 +51,7 @@ fi
 
 cpversion_fh=$(<'/usr/local/cpanel/version')
 
-if [[ $user ]]; then
+if [[ "$user" ]]; then
     cpuser_fh=$(<"/var/cpanel/users/$user")
 fi
 
@@ -60,7 +60,7 @@ fi
 #############
 BlackedHours() {
 # Get the blackout hours and display if stats can run within those hours
-if [[ $stats_fh ]]; then
+if [[ "$stats_fh" ]]; then
 	# Removes "BLACKHOURS=" and then replace the , between numbers with a space
 	hours=( $(echo "$stats_fh" | grep "BLACKHOURS=" | sed -e 's/.*=//' -e 's/,/ /g')) 
 
@@ -70,11 +70,11 @@ if [[ $stats_fh ]]; then
 	# Subtract the amount of array indices (hours) from 24 to get how many hours are left that stats can run
 	allowed=$((24 - ${#hours[@]}))
 
-	# if the last element of the array is 24 (meaning all hours selected to blackout in WHM), then print 'stats will never run'
+	# if the amount of elements is 24 (meaning all hours selected to blackout in WHM), then print 'stats will never run'
 	if [[ "${#hours[@]}" = 24 ]]; then 
 		printf "%b\n" "${hourstr// /,} (Allowed Time: \033[1;31m0 hours - STATS WILL NEVER RUN!\033[0m)"
 	else
-		# If the last element is not 24, meaning some hours are blacked out, then..
+		# If the amount of elements is 0, meaning some hours are blacked out, then..
 		if [[ "${#hours[@]}" = 0 ]]; then
 			# if there are no indices (hours blacked out) then print 'allowed 24 hours'
 			printf "%b\n" "\033[0;32mNever\033[0m (Allowed Time: \033[0;32m24 hours\033[0m)"
@@ -92,7 +92,8 @@ fi
 LogsRunEvery() {
 # Show how often stats are set to process
 # Removes "cycle_hours" and store result in $hours 
-hours=$(echo "$cpconfig_fh" | grep "cycle_hours=" | sed 's/.*=//')
+hours=$(echo "$cpconfig_fh" | grep "cycle_hours=")
+hours=${hours#*=} # Use only value after the =
 
 if [[ -z "$hours" ]]; then
 	printf "%b\n" "24"
@@ -104,7 +105,8 @@ fi
 BandwidthRunsEvery() {
 # Show how oftern bandwidth is set to process
 # Removes "bwcycle=" and store result in $hours
-hours=$(echo "$cpconfig_fh" | grep "bwcycle=" | sed 's/.*=//')
+hours=$(echo "$cpconfig_fh" | grep "bwcycle=")
+hours=${hours#*=} # Use only value after the =
 if [[ -z "$hours" ]]; then
 	printf "%b\n" "2"
 else
@@ -116,7 +118,8 @@ IsAvailable() {
 # See if the stats program is disabled in Tweak Settings
 # greps for the stats prog name in cpanel.conf and removes output up to the = sign
 prog=$1
-disabled=$(echo "$cpconfig_fh" | grep "skip${prog}=" | sed 's/.*=//')
+disabled=$(echo "$cpconfig_fh" | grep "skip${prog}=")
+disabled=${disabled#*=} # Use only value after the =
 if [[ "$disabled" = "1" ]] ||  [[ -z "$disabled" ]]; then
 	printf "%b\n" "\033[1;31mDisabled\033[0m"
 elif [[ "$disabled" = "0" ]]; then
@@ -126,7 +129,7 @@ fi
 
 IsDefaultOn() {
 # Make sure we're looking for the stats program in upper case, and display if the stats program is set to active by default or not
-if [[ $stats_fh  ]]; then
+if [[ "$stats_fh"  ]]; then
 prog=$(echo ${1} | tr "[:lower:]" "[:upper:]")
 lcprog=$(echo ${1} | tr "[:upper:]" "[:lower:]")
 isdefined=$(echo "$stats_fh" | grep "DEFAULTGENS=")
@@ -138,7 +141,7 @@ ison=$(echo "$stats_fh" | egrep "DEFAULTGENS=.*${prog}")
 			printf "%b\n" "\033[1;31mOff\033[0m"
 		elif [[ "$ison" ]] && [[ $(IsAvailable "$lcprog") =~ 'Disabled' ]]; then
 			printf "%b\n" "\033[1;31mOff\033[0m"
-        elif [[ "$ison" ]] && [[ $isdefined =~ '0' ]]; then
+        elif [[ "$ison" ]] && [[ "$isdefined" =~ '0' ]]; then
             printf "%b\n" "\033[1;31mOff\033[0m"
 		else
 			printf "%b\n" "\033[0;32mOn\033[0m"
@@ -151,9 +154,11 @@ fi
 
 AllAllowed() {
 # Display if per WHM all users are allowed to pick stats programs
-if [[ $stats_fh ]]; then
-	allowall=$(echo "$stats_fh" | grep "ALLOWALL=" | sed 's/.*=//')
-	users=$(echo "$stats_fh" | grep VALIDUSERS | sed -e 's/.*=//' -e 's/,/ /g')
+if [[ "$stats_fh" ]]; then
+	allowall=$(echo "$stats_fh" | grep "ALLOWALL=")
+    allowall=${allowall#*=}
+	users=$(echo "$stats_fh" | grep VALIDUSERS)
+    users=${users#*=}
 	if [[ "$allowall" = yes ]]; then
 		printf "%b\n" "\033[0;32mYes\033[0m"
 	elif [[ -z "$allowall" ]] && [[ -z "$users" ]]; then
@@ -168,15 +173,14 @@ fi
 
 UserAllowed() {
 # If a user has individually been set to pick stats then show yes, but show no if stats.conf has bad permissions
-if [[ $stats_fh ]]; then
+if [[ "$stats_fh" ]]; then
 	user=\\b$1\\b
-	users=$(echo "$stats_fh" | grep VALIDUSERS | sed -e 's/.*=//' -e 's/,/ /g')
-    stats_fh_perms=$(stat -c %a $stats_fh)
+    stats_fh_perms=$(stat -c %a /etc/stats.conf)
 	# if the user is set to pick stats, or all users are set to pick stats, and stats.conf has good permissons, then print yes, otherwise
 	# if the user is set to pick stats and stats.conf has bad permissions, then print no, else print no.  
-	if ( [[ $users =~ $user ]] || [[ $stats_fh =~ "ALLOWALL=yes" ]] ) && [ $stats_fh_perms = 644 ]; then
+	if ( [[ "$stats_fh" =~ $user ]] || [[ "$stats_fh" =~ "ALLOWALL=yes" ]] ) && [ "$stats_fh_perms" = 644 ]; then
 		printf "%b\n" "\033[0;32mYes\033[0m"
-	elif  [[ $users =~ $user ]] && [[ $stats_fh_perms != 644 ]]; then
+	elif  [[ "$stats_fh" =~ $user ]] && [[ "$stats_fh_perms" != 644 ]]; then
 		printf "%b\n" "\033[1;31mYes\033[0m"
 		printf "\n"
 		printf "%b\n" "\033[1;31m*** /etc/stats.conf doesn't have permissions of 644. This will cause user $1 to not be able to choose log programs in cPanel, however, the user will still show ability to choose log programs. ***\033[0m"
@@ -190,10 +194,9 @@ fi
 
 UserAllowedRegex() {
 # This function is only needed because the color codes in the yes/no output in UserAllowed() don't work with the expected yes/no output from running that function in GetEnabledDoms()
-if [[ $stats_fh ]]; then
+if [[ "$stats_fh" ]]; then
 	user=\\b$1\\b
-	users=$(echo "$stats_fh" | grep VALIDUSERS | sed -e 's/.*=//' -e 's/,/ /g')
-	if [[ $users =~ $user ]]; then
+	if [[ "$stats_fh" =~ $user ]]; then
 		printf "%b\n" "Yes"
 	else
 		printf "%b\n" "No"
@@ -238,8 +241,9 @@ fi
 UserKeepUp() {
 # Display if the user's stats are being processed in time
 # $interval is running the return value of logsrunevery * 60 to get the amount of minutes (default of 1440, or 24 hours)
+user=$1
 interval=$(($(LogsRunEvery) * 60))
-oldstats=$(find /var/cpanel/lastrun/${1} -type f -name 'stats' -mmin +${interval} -exec ls -l {} \;)
+oldstats=$(find /var/cpanel/lastrun/$user -type f -name 'stats' -mmin +${interval} -exec ls -l {} \;)
 if [[ -z "$oldstats" ]]; then
 	printf "%b\n" "\033[0;32mYes\033[0m"
 else
@@ -250,8 +254,9 @@ fi
 BwUserKeepUp() {
 # Display if the user's stats are being processed in time
 # $interval is running the return value of logsrunevery * 60 to get the amount of minutes (default of 120, or 2 hours)
+user=$1
 interval=$(($(BandwidthRunsEvery) * 60))
-oldstats=$(find /var/cpanel/lastrun/${1} -type f -name 'bandwidth' -mmin +${interval} -exec ls -l {} \;)
+oldstats=$(find /var/cpanel/lastrun/$user -type f -name 'bandwidth' -mmin +${interval} -exec ls -l {} \;)
 if [[ -z "$oldstats" ]]; then
 	printf "%b\n" "\033[0;32mYes\033[0m"
 else
@@ -331,16 +336,17 @@ fi
 
 WhoCanPick() {
 # Display users who have been specified to choose stats programs
-if [ $stats_fh ]; then
-	users=$(echo | $stats_fh | grep "VALIDUSERS=" | sed 's/.*=//')
+if [[ "$stats_fh" ]]; then
+	users=$(echo "$stats_fh" | grep "VALIDUSERS=")
+    users=${users#*=}
 	if [[ -z "$users" ]]; then
 		printf "%b\n" "\033[0;32mNobody\033[0m"
 	else
 		printf "%b\n" "\033[0;32m$users\033[0m"
 	fi
 	if [[ "$users" ]]; then
-		check=$(find $stats_fh -perm 644)
-		if [ -z "$check" ]; then
+		check=$(find '/etc/stats.conf' -perm 644)
+		if [[ -z "$check" ]]; then
 			printf "%b\n"
 			printf "%b\n" "\033[1;31m*** /etc/stats.conf doesn't have permissions of 644. This will cause users to not be able to choose log programs in cPanel. ***\033[0m"
 			printf "\n"
@@ -521,7 +527,7 @@ Awwwwstats
 #CheckPerl
 
 # No arg = general info on web stats setup
-if [ -z $user ]; then
+if [ -z "$user" ]; then
 	printf "\n"
 	printf "%s\n" "Displaying general information on web stats configuration."
 	printf "%s\n" "To display user configuration, run \"webstatsprobe <cP User>\""
@@ -549,7 +555,7 @@ else
 	if [[ -f "/var/cpanel/users/$user" ]] && [[ -d "/var/cpanel/userdata/$user" ]]; then
 		printf "\n"	
 		printf "%s\n" "Available flags when running 'webstatsprobe <user>'"
-		if ! [[ $@ =~ --noquery ]]; then
+		if ! [[ "$@" =~ --noquery ]]; then
 			printf "%s\n" "--noquery (turns off DNS lookups for each user domain)"
 		else
 			printf "%s\n" "None"
@@ -567,7 +573,7 @@ else
 			printf "%b\n" "\033[1;31m*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\033[0m"
 		fi
 		# Check if each of the user domains resolve to IP on the server
-		if [[ $noquery -ne 0 ]]; then
+		if [[ "$noquery" -ne 0 ]]; then
 			DomainResolves $user
 		fi
 			printf "%b\n" "KEEPING UP (STATS): $(UserKeepUp "$user") (Last Run: $(LastRun "$user"))"
