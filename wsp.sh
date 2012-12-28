@@ -21,7 +21,7 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 
 # Set defaults for positional parameters
-noquery=1 # Default to doing DNS queries on user domains
+noquery=0 # Default to doing DNS queries on user domains
 
 # Parse positional parameters for flags and set variables if argument is present
 for i in $@; do
@@ -32,9 +32,19 @@ for i in $@; do
 
 	# noquery is used to turning off DNS lookups for user domains when webstatsprobe called against a user
 	if [[ "$i" =~ "--noquery" ]]; then
-		noquery=0
+		noquery=1
 	fi
 done
+
+
+###########################################
+# Check if necessary programs are missing #
+###########################################
+
+if [[ ! -x '/usr/bin/dig' ]] && [[ $noquery -eq 0 ]]; then
+    printf "%b\n" "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups."
+    exit 1
+fi
 
 
 #####################
@@ -54,6 +64,7 @@ cpversion_fh=$(<'/usr/local/cpanel/version')
 if [[ "$user" ]]; then
     cpuser_fh=$(<"/var/cpanel/users/$user")
 fi
+
 
 #############
 # Functions #
@@ -477,7 +488,7 @@ DomainResolves() {
 printf "%b" "ALL DOMAINS RESOLVE TO SERVER: "
 user=$1
 # Grab domain list from the cPanel user file
-domlist=($(echo "$user_fh" | grep ^DNS | cut -f2 -d=))
+domlist=($(grep ^DNS /var/cpanel/users/$user | cut -f2 -d=))
 # For each domain in the list we see if google's public DNS can resolve the IP
 for i in ${domlist[*]}; do 
 	ip=$(dig @8.8.8.8 +short $i)
@@ -573,7 +584,7 @@ else
 			printf "%b\n" "\033[1;31m*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\033[0m"
 		fi
 		# Check if each of the user domains resolve to IP on the server
-		if [[ "$noquery" -ne 0 ]]; then
+		if [[ "$noquery" -ne 1 ]]; then
 			DomainResolves $user
 		fi
 			printf "%b\n" "KEEPING UP (STATS): $(UserKeepUp "$user") (Last Run: $(LastRun "$user"))"
