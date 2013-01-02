@@ -142,14 +142,6 @@ if ($cpuserstats_fh) {
 }
 
 
-#######################################
-# Misc. checks for stupid user tricks #
-#######################################
-
-# Run the Awwwstats function to see if awstats.pl is executable
-Awwwwstats();
-
-
 ####################
 # Main code output #
 ####################
@@ -230,9 +222,10 @@ else {
             print "LOGAHOLIC: ";
             print WillRunForUser('logaholic' , $user);
         }
-        if (AllAllowed() =~ 'No' and UserAllowedRegex($user) =~ 'No') {
+        if (AllAllowed() =~ 'No' and UserAllowed($user) eq 'No') {
             print "CAN PICK STATS: ";
-            print UserAllowed($user);
+            print DARK GREEN "Yes\n" if UserAllowed($user) eq 'Yes';
+            print BOLD RED "No\n" if UserAllowed($user) eq 'No';
         }
         if ($blockedprog == 1) {
             print "\n";
@@ -253,6 +246,16 @@ else {
     }
 }
 
+print "\n";
+
+
+#######################################
+# Misc. checks for stupid user tricks #
+#######################################
+
+# Run the Awwwstats function to see if awstats.pl is executable
+Awwwwstats();
+CheckBadPerms();
 print "\n";
 
 
@@ -404,37 +407,6 @@ sub AllAllowed {
 }
 
 sub UserAllowed {
-    # If a user has individually been set to pick stats then show yes, but show
-    # no if stats.conf has bad permissions
-    if (%stats_settings) {
-        my $user = shift;
-        # if the user is set to pick stats, or all users are set to pick stats,
-        # and stats.conf has good permissions, then print yes. Otherwise, if the
-        # user is set to pick stats and stats.conf has bad permissions, then
-        # print no, else print no.
-        my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
-        if (defined($stats_settings{'VALIDUSERS'})) {
-            if ($stats_settings{'VALIDUSERS'} =~ /\b$user\b/
-                    or $stats_settings{'ALLOWALL'} eq 'yes') {
-                if ($mode eq '0644') {
-                    print DARK GREEN "Yes\n";
-                } 
-            }
-        } 
-        elsif (defined($stats_settings{'VALIDUSERS'}) and $stats_settings{'VALIDUSERS'} =~ $user and $mode ne '0644') {
-            print BOLD RED "Yes\n";
-            print "\n";
-            print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause user $user to not be able to choose log programs in cPanel, however, the user will still show the ability to choose log programs. ***\n";
-        }
-        print BOLD RED "No\n";
-    }
-    else {
-        print BOLD RED "No\n";
-    }
-    return;
-}
-
-sub UserAllowedRegex {
 # This UserAllowed function is called by the main body and is necessary to
 # output the warning for stats.conf. This function however is needed when
 # only yes/no output is required by other functions which call it such as
@@ -590,6 +562,13 @@ sub Awwwwstats {
     }
 }
 
+sub CheckBadPerms {
+    my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
+    if ($mode ne '0644') {
+        print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. If users have the ability to choose stat programs, this will cause the programs to be locked out by administrator in cPanel. ***\n";
+    }
+}
+
 sub HttpdConf {
 # No stats if Apache conf has problems, so check syntax
     my $check = `/usr/local/apache/bin/apachectl configtest 2>&1`;
@@ -608,11 +587,6 @@ sub WhoCanPick {
     if (%stats_settings) {
         if ($stats_settings{'VALIDUSERS'}) {
             print DARK GREEN $stats_settings{'VALIDUSERS'};
-            my $mode = sprintf '%04o' , (stat $statsconfig_fh)[2] & 07777;
-            if ($mode ne '0644') {
-                print "\n\n";
-                print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause users to not be able to choose log programs in cPanel. ***\n";
-            }
         }
         else {
             print DARK GREEN "Nobody";
@@ -657,7 +631,7 @@ sub GetEnabledDoms {
         # overridden it in cPanel. If however the stats program is not active by
         # default then show No as stats won't generate for that program unless
         # the user specifically enables it in cPanel.
-        if ((UserAllowedRegex($user) =~ 'Yes' or AllAllowed =~ 'Yes')
+        if ((UserAllowed($user) =~ 'Yes' or AllAllowed =~ 'Yes')
                 and (IsDefaultOn($prog) =~ 'On')) {
             my @domains;
             foreach my $dom (@alldoms) {
@@ -743,7 +717,7 @@ sub WillRunForUser {
             # software." is off, then
             if (AllAllowed =~ 'No') {
                 # if the user is added to the list to choose progs, then
-                if (UserAllowedRegex($user) =~ 'Yes') {
+                if (UserAllowed($user) =~ 'Yes') {
                         DumpDomainConfig($prog , $user);
                 }
                 else {
@@ -766,7 +740,7 @@ sub WillRunForUser {
             # if the allow all users to change stats is yes OR the user is in
             # the allowed list, then show if prog is active or not for each
             # domain.
-            if (UserAllowedRegex($user) =~ 'Yes' or AllAllowed() =~ 'Yes') {
+            if (UserAllowed($user) =~ 'Yes' or AllAllowed() =~ 'Yes') {
                 DumpDomainConfig($prog , $user);
             }
             else {
