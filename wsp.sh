@@ -11,12 +11,21 @@ version="1.9.4"
 ## Changelog
 
 
+#############################
+# DEPRECATED, PRINT WARNING #
+#############################
+
+printf "%s\n" "This script is deprecated and no longer maintained. Please use webstatsprobe.pl instead!"
+printf "%s\n" "wget webstatsprobe.cptechs.info/webstatsprobe.pl"
+exit 1
+
+
 ################################
 # Verify script called as root #
 ################################
 
 if [[ "$EUID" -ne 0 ]]; then
-    echo "This script must be run as root" 1>&2
+    printf "\n" "This script must be run as root" 1>&2
     exit 1
 fi
 
