@@ -201,6 +201,7 @@ else {
         }
         # If --noquery wasn't specified, then check if each of the user domains resolve to IP on the server
         if ($noquery == 0) {
+        print "ALL DOMAINS RESOLVE TO SERVER: ";
             DomainResolves($user);
         }
         print "KEEPING UP (STATS): " , UserKeepUp($user) , " (Last Run: " , LastRun($user) , ")\n";
@@ -801,7 +802,6 @@ sub DomainResolves {
             $notbound .= "$name\n";
         }
     }
-    print "ALL DOMAINS RESOLVE TO SERVER: ";
     
     # If $donotresolve and $notbound and $timedout are null, meaning all lookups
     # were successful
