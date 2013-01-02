@@ -18,9 +18,9 @@ use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
+use Data::Dumper;
 
-
-my $version = '1.0.8';
+my $version = '1.0.9';
 
 
 ###################################################
@@ -56,6 +56,15 @@ foreach my $arg (@ARGV) {
 my $blockedprog = 0;
 
 
+###########################################
+# Check if necessary programs are missing #
+###########################################
+
+if (! -x '/usr/bin/dig' and $noquery == 0) {
+	die "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
+}
+
+
 #####################
 # Open File Handles #
 #####################
@@ -78,10 +87,6 @@ if (defined($user)) {
     if (-f "$homedir/tmp/stats.conf") {
 	    open($cpuserstats_fh, '<' , "$homedir/tmp/stats.conf")
 	    	or die "Could not open '$homedir/tmp/stats.conf', $!\n";
-    }
-
-    if (! -x '/usr/bin/dig' and $noquery == 0) {
-	die "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
     }
 }
 
@@ -421,9 +426,7 @@ sub UserAllowed {
             print "\n";
             print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. This will cause user $user to not be able to choose log programs in cPanel, however, the user will still show the ability to choose log programs. ***\n";
         }
-        else {
-            print BOLD RED "No\n";
-        }           
+        print BOLD RED "No\n";
     }
     else {
         print BOLD RED "No\n";
