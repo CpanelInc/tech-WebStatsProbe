@@ -593,9 +593,12 @@ sub Awwwwstats {
 }
 
 sub CheckBadPerms {
-    my $mode = sprintf '%04o', ( stat $statsconfig_fh )[2] & 07777;
-    if ( $mode ne '0644' ) {
-        print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. If users have the ability to choose stat programs, this will cause the programs to be locked out by administrator in cPanel. ***\n";
+    
+    if ( defined($statsconfig_fh) ) {
+        my $mode = sprintf '%04o', ( stat $statsconfig_fh )[2] & 07777;
+        if ( $mode ne '0644' ) {
+            print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. If users have the ability to choose stat programs, this will cause the programs to be locked out by administrator in cPanel. ***\n";
+        }
     }
 
 }
