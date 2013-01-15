@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Data::Dumper;
 
-my $version = '1.0.9';
+my $version = '1.0.10';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -462,7 +462,7 @@ sub KeepingUp {
     my @outofdate;
     my $interval = LogsRunEvery() * 60 * 60;
     my $time     = time();
-    my @filelist = </var/cpanel/lastrun/*/stats>;
+    my @filelist = glob '/var/cpanel/lastrun/*/stats';
 
     foreach my $file (@filelist) {
         my $mtime    = ( stat($file) )[9];
