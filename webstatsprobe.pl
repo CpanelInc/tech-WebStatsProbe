@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Data::Dumper;
 
-my $version = '1.0.10';
+my $version = '1.0.11';
 
 ###################################################
 # Check to see if the calling user is root or not #
