@@ -148,8 +148,7 @@ if ( !defined($user) ) {
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"webstatsprobe <cP User>\"\n";
     print "\n";
-    print DARK CYAN "[ Web Stats Probe v$version - Results For:",
-      BOLD YELLOW " System ", DARK CYAN "]\n";
+    print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
     print "CPANELLOGD: ",  LogDRunning(),  "\n";
     print "HTTPD CONF: ",  HttpdConf(),    "\n";
@@ -194,8 +193,7 @@ else {
         # after STATGENS=. If not then the admin has blocked all stats programs.
         # Yes, we have seen someone do this before.
         if ( defined( $cpuser_settings{'STATGENS'} )
-            and $cpuser_settings{'STATGENS'} eq "" )
-        {
+                  and $cpuser_settings{'STATGENS'} eq "" ) {
             print BOLD RED "*** ALL STATS PROGRAMS BLOCKED FOR USER BY SERVER ADMIN IN WHM ***\n\n";
         }
 
