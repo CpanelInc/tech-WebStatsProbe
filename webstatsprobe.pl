@@ -441,7 +441,7 @@ sub UserAllowed {
 sub LogDRunning {
 
     # Check if cpanellogd is running. Null output from --check means it is.
-    my $check = `/scripts/restartsrv_cpanellogd --check`;
+    my $check = qx(/scripts/restartsrv_cpanellogd --check);
 
     if ( !$check ) {
         return DARK GREEN "Running";
@@ -473,7 +473,7 @@ sub KeepingUp {
         $user =~ s/\/stats//;
         if ( $duration > $interval ) {
             if ( -d "/var/cpanel/userdata/$user" ) {
-                my $olduser = `ls -la /var/cpanel/lastrun/$user/stats`;
+                my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
                 push( @outofdate, $olduser );
             }
         }
@@ -604,7 +604,7 @@ sub CheckBadPerms {
 sub HttpdConf {
 
     # No stats if Apache conf has problems, so check syntax
-    my $check = `/usr/local/apache/bin/apachectl configtest 2>&1`;
+    my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
 
     if ( $check =~ 'Syntax OK' ) {
         return DARK GREEN "Syntax OK";
@@ -826,7 +826,7 @@ sub DomainResolves {
     my $donotresolve;
     my $timedout;
     my $notbound;
-    chomp( my $bound = `/sbin/ifconfig` );
+    chomp( my $bound = qx(/sbin/ifconfig) );
 
     # Grab domain list from the cPanel user file
     my @domlist;
@@ -838,7 +838,7 @@ sub DomainResolves {
 
     # For each domain in the list we see if google's resolver can resolve the IP
     foreach my $name (@domlist) {
-        chomp( my $ip = `dig \@8.8.8.8 +short $name` );
+        chomp( my $ip = qx(dig \@8.8.8.8 +short $name) );
 
         # If it can't be resolved..
         if ( $ip eq "" ) {
