@@ -162,8 +162,8 @@ if ( !defined($user) ) {
         print "WHO CAN PICK STATS: ";
         print WhoCanPick(), "\n";
     }
-    print "ANALOG: ", IsAvailable('analog'), " (Active by Default: ", IsDefaultOn('ANALOG'), ")\n";
-    print "AWSTATS: ", IsAvailable('awstats'), " (Active by Default: ", IsDefaultOn('AWSTATS'), ")\n";
+    print "ANALOG: ",   IsAvailable('analog'),    " (Active by Default: ", IsDefaultOn('ANALOG'),    ")\n";
+    print "AWSTATS: ",  IsAvailable('awstats'),   " (Active by Default: ", IsDefaultOn('AWSTATS'),   ")\n";
     print "WEBALIZER ", IsAvailable('webalizer'), " (Active by Default: ", IsDefaultOn('WEBALIZER'), ")\n";
 
     if ( CanRunLogaholic() eq 'Yes' ) {
@@ -468,7 +468,7 @@ sub KeepingUp {
         my $user     = $file;
 
         # now let's remove '/var/cpanel/lastrun', then '/stats/' so we can
-        # get jut the username
+        # get just the username
         $user =~ s/\/var\/cpanel\/lastrun\///;
         $user =~ s/\/stats//;
         if ( $duration > $interval ) {
