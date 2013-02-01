@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Data::Dumper;
 
-my $version = '1.0.11';
+my $version = '1.0.12';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -465,12 +465,12 @@ sub KeepingUp {
     foreach my $file (@filelist) {
         my $mtime    = ( stat($file) )[9];
         my $duration = $time - $mtime;
-        my $user     = $file;
 
         # now let's remove '/var/cpanel/lastrun', then '/stats/' so we can
         # get just the username
-        $user =~ s/\/var\/cpanel\/lastrun\///;
-        $user =~ s/\/stats//;
+        my $user = $file;
+        $user    =~ s/\/var\/cpanel\/lastrun\///;
+        $user    =~ s/\/stats//;
         if ( $duration > $interval ) {
             if ( -d "/var/cpanel/userdata/$user" ) {
                 my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
