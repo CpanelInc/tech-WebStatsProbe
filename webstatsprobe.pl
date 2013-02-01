@@ -20,7 +20,7 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Data::Dumper;
 
-my $version = '1.0.12';
+my $version = '1.1';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -153,8 +153,8 @@ if ( !defined($user) ) {
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"webstatsprobe.pl <cP User>\"\n";
     print "\n";
-    print "Available flags when running \"webstatsprobe.pl\"\n";
-        print "--nots (turns off display of Tweak Settings for stats)\n" if $nots == 0;
+    print "Available flags when running \"webstatsprobe.pl\" (if any):\n";
+    print "    --nots (turns off display of Tweak Settings for stats)\n" if $nots == 0;
     print "\n";
     print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
@@ -188,8 +188,8 @@ else {
     # the output
     if ( -e $cpuser_fh and -d "/var/cpanel/userdata/$user" ) {
         print "\n";
-        print "Available flags when running \"webstatsprobe <user>\"\n";
-            print "--noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
+        print "Available flags when running \"webstatsprobe <user>\" (if any):\n";
+            print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
         print "\n";
         print DARK CYAN "[ Web Stats Probe v$version - Results For: ", BOLD YELLOW $user , DARK CYAN " ]\n";
         print "\n";
@@ -892,7 +892,17 @@ sub DomainResolves {
 
 sub DisplayTS {
 
+    print "Awstats reverse DNS resolution: ";
+    # This setting defaults to Off
+    if ( defined($config_settings{'awstatsreversedns'}) and $config_settings{'awstatsreversedns'} == 1 ) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+
     print "Allow users to update Awstats from cPanel: ";
+    # This setting defaults to Off
     if ( defined($config_settings{'awstatsbrowserupdate'}) and $config_settings{'awstatsbrowserupdate'} == 1 ) {
         print DARK GREEN "On\n";
     }
@@ -901,6 +911,7 @@ sub DisplayTS {
     }
 
     print "Delete each domain's access logs after stats run: ";
+    # This setting defaults to On
     if ( defined($config_settings{'dumplogs'}) and $config_settings{'dumplogs'} == 0 ) {
         print DARK GREEN "Off\n";
     }
@@ -909,12 +920,12 @@ sub DisplayTS {
     }
 
     print "Extra CPUs for server load: ";
+    # This setting defaults to 0
     if ( !defined($config_settings{'extracpus'}) ) {
         print DARK GREEN "0\n";
     }
     else {
         print DARK GREEN "$config_settings{'extracpus'}\n";
     }
-
 
 }
