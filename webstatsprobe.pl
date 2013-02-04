@@ -19,7 +19,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
-my $version = '1.1';
+my $version = '1.1.1';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -150,7 +150,7 @@ if ($cpuserstats_fh) {
 if ( !defined($user) ) {
     print "\n";
     print "Displaying general information on web stats configuration.\n";
-    print "To display user configuration, run \"webstatsprobe.pl <cP User>\"\n";
+    print "To display user configuration, run \"$0 <cP User>\"\n";
     print "\n";
     print "Available flags when running \"webstatsprobe.pl\" (if any):\n";
     print "    --nots (turns off display of Tweak Settings for stats)\n" if $nots == 0;
@@ -187,7 +187,7 @@ else {
     # the output
     if ( -e $cpuser_fh and -d "/var/cpanel/userdata/$user" ) {
         print "\n";
-        print "Available flags when running \"webstatsprobe <user>\" (if any):\n";
+        print "Available flags when running \"$0 <user>\" (if any):\n";
             print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
         print "\n";
         print DARK CYAN "[ Web Stats Probe v$version - Results For: ", BOLD YELLOW $user , DARK CYAN " ]\n";
