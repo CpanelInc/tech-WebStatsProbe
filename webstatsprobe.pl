@@ -18,7 +18,6 @@ use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
-use Data::Dumper;
 
 my $version = '1.1';
 
