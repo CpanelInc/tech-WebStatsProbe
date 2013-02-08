@@ -850,15 +850,11 @@ sub DomainResolves {
         # If it can't be resolved..
         if ( $ip eq "" ) {
             $donotresolve .= "$name\n";
-
-            # Else if the DNS lookup times out...
         }
-        elsif ( $ip =~ 'connection timed out' ) {
+        elsif ( $ip =~ 'connection timed out' ) {  # Else if the DNS lookup times out...
             $timedout .= "$name\n";
-
-           # Else if the domain does resolve, just not to an IP on this server..
         }
-        elsif ( $bound !~ $ip ) {
+        elsif ( $bound !~ $ip ) { # Else if the domain does resolve, just not to an IP on this server..
             $notbound .= "$name\n";
         }
     }
