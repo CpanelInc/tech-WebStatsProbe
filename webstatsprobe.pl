@@ -19,7 +19,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
-my $version = '1.1.1';
+my $version = '1.1.2';
 
 ###################################################
 # Check to see if the calling user is root or not #
