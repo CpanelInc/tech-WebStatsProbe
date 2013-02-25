@@ -19,7 +19,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
-my $version = '1.1.2';
+my $version = '1.1.3';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -152,12 +152,12 @@ if ( !defined($user) ) {
     print "Displaying general information on web stats configuration.\n";
     print "To display user configuration, run \"$0 <cP User>\"\n";
     print "\n";
-    print "Available flags when running \"webstatsprobe.pl\" (if any):\n";
+    print "Available flags when running $0 (if any):\n";
     print "    --nots (turns off display of Tweak Settings for stats)\n" if $nots == 0;
     print "\n";
     print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
-    if ( $nots == 0 ) {
+    if ( !$nots ) {
         print "WHM TWEAK SETTINGS FOR STATS: \n";
         DisplayTS();
         print "\n";
@@ -205,7 +205,7 @@ else {
         }
 
         # If --noquery wasn't specified, then check if each of the user domains resolve to IP on the server
-        if ( $noquery == 0 ) {
+        if (!$noquery) {
             print "ALL DOMAINS RESOLVE TO SERVER: ";
             DomainResolves($user);
         }
@@ -233,7 +233,7 @@ else {
             print DARK GREEN "Yes\n" if UserAllowed($user) eq 'Yes';
             print BOLD RED "No\n"    if UserAllowed($user) eq 'No';
         }
-        if ( $blockedprog == 1 ) {
+        if ($blockedprog) {
             print "\n";
             print BOLD RED "*** Webstatsprobe reports that one or more statsprograms are BLOCKED for the user by the server admin ***\n";
             print BOLD RED "To correct this issue in WHM, go to:\n";
