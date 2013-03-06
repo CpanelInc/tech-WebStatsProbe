@@ -11,7 +11,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 
 # Tested on cPanel 11.30 - 11.36
 
-# Maintainers: Paul Trost, Charles Boyd, Anne Sipes
+# Maintainers: Charles Boyd, Anne Sipes
 
 use warnings;
 use strict;
