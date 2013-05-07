@@ -19,7 +19,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
-my $version = '1.1.3';
+my $version = '1.1.4';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -650,6 +650,7 @@ sub GetEnabledDoms {
     my $prog = uc(shift);
     my $user = shift;
     my @alldoms;
+    my @domains;
 
     foreach my $param (%cpuser_settings) {
         if ( defined($param) and $param =~ /\ADNS/ ) {
@@ -661,10 +662,13 @@ sub GetEnabledDoms {
     # If $homedir/tmp/stats.conf exists then for each domain we want to see if
     # $prog-domainname eq yes or no
     if (%cpuser_stats_settings) {
-        my @domains;
         foreach my $dom (@alldoms) {
             my $capsdom = uc($dom);
-            if ( $cpuser_stats_settings{"$prog-$capsdom"} eq 'yes' ) {
+            # $homedir/tmp/stats.conf contains the domain and it =yes (stats 
+            # checked by user) or if a domain has been added but the domin list
+            # in cPanel hasn't been re-saved yet then we display =yes,
+            # otherwise =no.
+            if ( ($cpuser_stats_settings{"$prog-$capsdom"} and $cpuser_stats_settings{"$prog-$capsdom"} eq 'yes' ) or ! $cpuser_stats_settings{"$prog-$capsdom"} ) {
                 push( @domains, "$dom=yes" );
             }
             else {
@@ -678,10 +682,9 @@ sub GetEnabledDoms {
         # cPanel, and the stats program is active by default, then show Yes for
         # each domain as the default then would be On since the user hasn't
         # overridden it in cPanel.
-        if (    ( UserAllowed($user) =~ 'Yes' or AllAllowed =~ 'Yes' )
+        if ( ( UserAllowed($user) =~ 'Yes' or AllAllowed =~ 'Yes' )
             and ( IsDefaultOn($prog) =~ 'On' ) ) {
 
-            my @domains;
             foreach my $dom (@alldoms) {
                 $dom .= "=yes";
                 push( @domains, $dom );
