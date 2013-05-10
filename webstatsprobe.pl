@@ -9,9 +9,9 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.36
+# Tested on cPanel 11.30 - 11.38
 
-# Maintainers: Charles Boyd, Anne Sipes
+# Maintainers: Charles Boyd, Anne Sipes, Paul Trost
 
 use warnings;
 use strict;
