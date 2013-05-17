@@ -19,7 +19,7 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 
-my $version = '1.1.5';
+my $version = '1.1.6';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -398,8 +398,8 @@ sub AllAllowed {
 
     # Display if per WHM all users are allowed to pick stats programs
     if (%stats_settings) {
-        if (    $stats_settings{'ALLOWALL'}
-            and $stats_settings{'ALLOWALL'} eq 'yes' ) {
+        if ( exists($stats_settings{'ALLOWALL'})
+                and $stats_settings{'ALLOWALL'} eq 'yes' ) {
             return DARK GREEN "Yes";
         }
         elsif ( !$stats_settings{'ALLOWALL'}
