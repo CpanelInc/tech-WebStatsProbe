@@ -18,8 +18,10 @@ use strict;
 use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
+use Getopt::Long;
 
-my $version = '1.1.6';
+
+my $version = '1.2';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -35,26 +37,13 @@ if ( $> != 0 ) {
 # Set defaults for positional parameters
 my $noquery = 0;       # Default to doing DNS queries on user domains
 my $nots    = 0;       # Default to displaying Tweak Settings Stats values
-my $user    = undef;
+my $user    = undef;   # Default to no user to get system stats
 
-foreach my $arg (@ARGV) {
-
-    # if any of the arguments don't contain "--" then set user variable
-    if ( $arg !~ '--' ) {
-        $user = $arg;
-    }
-
-    # noquery is used to turning off DNS lookups for user domains when
-    # webstatsprobe called against a user
-    if ( $arg =~ '--noquery' ) {
-        $noquery = 1;
-    }
-
-    if ( $arg =~ '--nots' ) {
-        $nots = 1;
-    }
-
-}
+GetOptions(
+    'noquery' => \$noquery,
+    'nots'    => \$nots,
+    'user=s'  => \$user,    # =s is for --option with a value
+);
 
 # Going to be used later by IsBlocked();
 my $blockedprog = 0;
@@ -153,7 +142,8 @@ if ( !defined($user) ) {
     print "To display user configuration, run \"$0 <cP User>\"\n";
     print "\n";
     print "Available flags when running $0 (if any):\n";
-    print "    --nots (turns off display of Tweak Settings for stats)\n" if $nots == 0;
+    print "    --user <user> (display stats configuration for a user)\n" if !defined($user);
+    print "    --nots (turns off display of Tweak Settings info)\n" if $nots == 0;
     print "\n";
     print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
