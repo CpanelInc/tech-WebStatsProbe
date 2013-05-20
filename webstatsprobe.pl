@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.1';
+my $version = '1.2.2';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -467,11 +467,9 @@ sub KeepingUp {
         my $user = $file;
         $user    =~ s/\/var\/cpanel\/lastrun\///;
         $user    =~ s/\/stats//;
-        if ( $duration > $interval ) {
-            if ( -d "/var/cpanel/userdata/$user" ) {
-                my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
-                push( @outofdate, $olduser );
-            }
+        if ( $duration > $interval && -d "/var/cpanel/userdata/$user" ) {
+            my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
+            push( @outofdate, $olduser );
         }
     }
 
@@ -883,7 +881,7 @@ sub DisplayTS {
 
     print "Awstats reverse DNS resolution: ";
     # This setting defaults to Off
-    if ( defined( $config_settings{'awstatsreversedns'} )
+    if ( exists( $config_settings{'awstatsreversedns'} )
               and $config_settings{'awstatsreversedns'} == 1 )
     {
         print DARK GREEN "On\n";
@@ -894,7 +892,7 @@ sub DisplayTS {
 
     print "Allow users to update Awstats from cPanel: ";
     # This setting defaults to Off
-    if ( defined($config_settings{'awstatsbrowserupdate'})
+    if ( exists($config_settings{'awstatsbrowserupdate'})
              and $config_settings{'awstatsbrowserupdate'} == 1 ) {
         print DARK GREEN "On\n";
     }
@@ -904,7 +902,7 @@ sub DisplayTS {
 
     print "Delete each domain's access logs after stats run: ";
     # This setting defaults to On
-    if ( defined($config_settings{'dumplogs'}) 
+    if ( exists($config_settings{'dumplogs'}) 
              and $config_settings{'dumplogs'} == 0 ) {
         print DARK GREEN "Off\n";
     }
@@ -914,7 +912,7 @@ sub DisplayTS {
 
     print "Extra CPUs for server load: ";
     # This setting defaults to 0
-    if ( !defined($config_settings{'extracpus'}) ) {
+    if ( !exists($config_settings{'extracpus'}) ) {
         print DARK GREEN "0\n";
     }
     else {
