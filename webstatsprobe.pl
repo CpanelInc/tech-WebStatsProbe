@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2';
+my $version = '1.2.1';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -52,7 +52,7 @@ my $blockedprog = 0;
 # Check if necessary programs are missing #
 ###########################################
 
-if ( !-x '/usr/bin/dig' and $noquery == 0 ) {
+if ( !-x '/usr/bin/dig' && $noquery == 0 ) {
     die "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
 }
 
@@ -138,12 +138,11 @@ if ($cpuserstats_fh) {
 # No arg = general info on web stats setup
 if ( !defined($user) ) {
     print "\n";
-    print "Displaying general information on web stats configuration.\n";
-    print "To display user configuration, run \"$0 <cP User>\"\n";
+    print "Available flags when running \"$0\" (if any):\n";
+    print "    --user <cP user> (display stats configuration for a user)\n" if !defined($user);
+    print "    --nots           (turns off display of Tweak Settings info)\n" if $nots == 0;
     print "\n";
-    print "Available flags when running $0 (if any):\n";
-    print "    --user <user> (display stats configuration for a user)\n" if !defined($user);
-    print "    --nots (turns off display of Tweak Settings info)\n" if $nots == 0;
+    print "Displaying general information on web stats configuration.\n";
     print "\n";
     print DARK CYAN "[ Web Stats Probe v$version - Results For:", BOLD YELLOW " System ", DARK CYAN "]\n";
     print "\n";
@@ -177,7 +176,7 @@ else {
     # the output
     if ( -e $cpuser_fh and -d "/var/cpanel/userdata/$user" ) {
         print "\n";
-        print "Available flags when running \"$0 <user>\" (if any):\n";
+        print "Available flags when running \"$0 --<cP user>\" (if any):\n";
             print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
         print "\n";
         print DARK CYAN "[ Web Stats Probe v$version - Results For: ", BOLD YELLOW $user , DARK CYAN " ]\n";
