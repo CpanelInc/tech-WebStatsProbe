@@ -60,23 +60,23 @@ if ( !-x '/usr/bin/dig' && $noquery == 0 ) {
 # Open File Handles #
 #####################
 
-open( my $cpconfig_fh, '<', '/var/cpanel/cpanel.config' )
+open( my $CPCONFIG_FH, '<', '/var/cpanel/cpanel.config' )
   or die "Could not open /var/cpanel/cpanel.config, $!\n";
 
-open( my $statsconfig_fh, '<', '/etc/stats.conf' )
+open( my $STATSCONFIG_FH, '<', '/etc/stats.conf' )
   if ( -f "/etc/stats.conf" );    # no die here as stats.conf may not exist
 
-open( my $cpversion_fh, '<', '/usr/local/cpanel/version' )
+open( my $CPVERSION_FH, '<', '/usr/local/cpanel/version' )
   or die "Could not open /usr/local/cpanel/version, $!\n";
 
-my ( $cpuser_fh, $cpuserstats_fh );
+my ( $CPUSER_FH, $CPUSERSTATS_FH );
 if ( defined($user) ) {
-    open( $cpuser_fh, '<', "/var/cpanel/users/$user" )
+    open( $CPUSER_FH, '<', "/var/cpanel/users/$user" )
       or die "Could not open /var/cpanel/users/$user, $!\n";
 
     my $homedir = File::HomeDir::users_home($user);
     if ( -f "$homedir/tmp/stats.conf" ) {
-        open( $cpuserstats_fh, '<', "$homedir/tmp/stats.conf" )
+        open( $CPUSERSTATS_FH, '<', "$homedir/tmp/stats.conf" )
           or die "Could not open '$homedir/tmp/stats.conf', $!\n";
     }
 }
@@ -88,8 +88,8 @@ if ( defined($user) ) {
 # If file handles are available, put the settings into hashes to use later
 
 my %config_settings;
-if ($cpconfig_fh) {
-    while (<$cpconfig_fh>) {
+if ($CPCONFIG_FH) {
+    while (<$CPCONFIG_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
         if ( defined($value) ) {
@@ -99,8 +99,8 @@ if ($cpconfig_fh) {
 }
 
 my %stats_settings;
-if ($statsconfig_fh) {
-    while (<$statsconfig_fh>) {
+if ($STATSCONFIG_FH) {
+    while (<$STATSCONFIG_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
         if ( defined($value) ) {
@@ -110,8 +110,8 @@ if ($statsconfig_fh) {
 }
 
 my %cpuser_settings;
-if ($cpuser_fh) {
-    while (<$cpuser_fh>) {
+if ($CPUSER_FH) {
+    while (<$CPUSER_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
         if ( defined($value) ) {
@@ -121,8 +121,8 @@ if ($cpuser_fh) {
 }
 
 my %cpuser_stats_settings;
-if ($cpuserstats_fh) {
-    while (<$cpuserstats_fh>) {
+if ($CPUSERSTATS_FH) {
+    while (<$CPUSERSTATS_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
         if ( defined($value) ) {
@@ -174,7 +174,7 @@ if ( !defined($user) ) {
 else {
     # If called with a user argument, let's verify that user exists and display
     # the output
-    if ( -e $cpuser_fh and -d "/var/cpanel/userdata/$user" ) {
+    if ( -e $CPUSER_FH and -d "/var/cpanel/userdata/$user" ) {
         print "\n";
         print "Available flags when running \"$0 --<cP user>\" (if any):\n";
             print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
@@ -255,15 +255,15 @@ print "\n";
 ###########
 # Cleanup #
 ###########
-close($cpconfig_fh);
+close($CPCONFIG_FH);
 
 # If there was no /etc/stats.conf, then no need to close the FH for it.
-close($statsconfig_fh) if ( defined($statsconfig_fh) );
-close($cpversion_fh);
+close($STATSCONFIG_FH) if ( defined($STATSCONFIG_FH) );
+close($CPVERSION_FH);
 
 # If $user wasn't supplied as an arg, then no need to close FHs for it..
-close($cpuser_fh) if ( defined($user) );
-close($cpuserstats_fh) if ( defined($user) and defined($cpuserstats_fh) );
+close($CPUSER_FH) if ( defined($user) );
+close($CPUSERSTATS_FH) if ( defined($user) and defined($CPUSERSTATS_FH) );
 
 ##############
 ## Functions #
@@ -586,8 +586,8 @@ sub Awwwwstats {
 
 sub CheckBadPerms {
     
-    if ( defined($statsconfig_fh) ) {
-        my $mode = sprintf '%04o', ( stat $statsconfig_fh )[2] & 07777;
+    if ( defined($STATSCONFIG_FH) ) {
+        my $mode = sprintf '%04o', ( stat $STATSCONFIG_FH )[2] & 07777;
         if ( $mode ne '0644' ) {
             print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. If users have the ability to choose stat programs, this will cause the programs to be locked out by administrator in cPanel. ***\n";
         }
@@ -805,7 +805,7 @@ sub WillRunForUser {
 sub CanRunLogaholic {
 
     # Check if cPanel is >= 11.31 (when Logaholic was added).
-    while (<$cpversion_fh>) {
+    while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
         if ( $version ge '1131' ) {
