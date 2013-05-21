@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.2';
+my $version = '1.2.3';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -90,8 +90,8 @@ if ( defined($user) ) {
 my %config_settings;
 if ($cpconfig_fh) {
     while (<$cpconfig_fh>) {
-        chomp( my $param = $_ );
-        my ( $option, $value ) = split( '=', $param );
+        chomp;
+        my ( $option, $value ) = split('=');
         if ( defined($value) ) {
             $config_settings{$option} = $value;
         }
@@ -101,8 +101,8 @@ if ($cpconfig_fh) {
 my %stats_settings;
 if ($statsconfig_fh) {
     while (<$statsconfig_fh>) {
-        chomp( my $param = $_ );
-        my ( $option, $value ) = split( '=', $param );
+        chomp;
+        my ( $option, $value ) = split('=');
         if ( defined($value) ) {
             $stats_settings{$option} = $value;
         }
@@ -112,8 +112,8 @@ if ($statsconfig_fh) {
 my %cpuser_settings;
 if ($cpuser_fh) {
     while (<$cpuser_fh>) {
-        chomp( my $param = $_ );
-        my ( $option, $value ) = split( '=', $param );
+        chomp;
+        my ( $option, $value ) = split('=');
         if ( defined($value) ) {
             $cpuser_settings{$option} = $value;
         }
@@ -123,8 +123,8 @@ if ($cpuser_fh) {
 my %cpuser_stats_settings;
 if ($cpuserstats_fh) {
     while (<$cpuserstats_fh>) {
-        chomp( my $param = $_ );
-        my ( $option, $value ) = split( '=', $param );
+        chomp;
+        my ( $option, $value ) = split('=');
         if ( defined($value) ) {
             $cpuser_stats_settings{$option} = $value;
         }
