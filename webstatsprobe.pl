@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.3';
+my $version = '1.2.4';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -639,10 +639,11 @@ sub GetEnabledDoms {
     my @alldoms;
     my @domains;
 
-    foreach my $param (%cpuser_settings) {
+    while ( my ( $param,$value ) = each %cpuser_settings ) {
+        # If $param has a value and the line starts with DNS
+        # we put the domain name in @alldoms
         if ( defined($param) and $param =~ /\ADNS/ ) {
-            # If $param has a value and the line starts with DNS
-            push( @alldoms, $cpuser_settings{$param} );
+            push( @alldoms, $value );
         }
     }
 
