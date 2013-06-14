@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.4';
+my $version = '1.2.5';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -262,7 +262,7 @@ close($STATSCONFIG_FH) if ( defined($STATSCONFIG_FH) );
 close($CPVERSION_FH);
 
 # If $user wasn't supplied as an arg, then no need to close FHs for it..
-close($CPUSER_FH) if ( defined($user) );
+close($CPUSER_FH)      if ( defined($user) );
 close($CPUSERSTATS_FH) if ( defined($user) and defined($CPUSERSTATS_FH) );
 
 ##############
@@ -378,7 +378,12 @@ sub IsDefaultOn {
     }
     else {
         # Stats haven't been customized at all in WHM, so no stats.conf yet
-        return DARK GREEN "On";
+        if ( IsAvailable( lc($prog) ) =~ 'Available' ) {
+            return DARK GREEN "On";
+        }
+        elsif ( IsAvailable( lc($prog) ) =~ 'Disabled' ) {
+            return BOLD RED 'Off';
+        }
     }
 
 }
