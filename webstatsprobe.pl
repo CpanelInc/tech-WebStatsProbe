@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.5';
+my $version = '1.2.6';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -338,7 +338,7 @@ sub IsAvailable {
  # See if the stats program is disabled in tweak settings, if so return Disabled
  # else return Available
     my $prog = shift;
-    $prog = "skip" . $prog;
+    $prog = 'skip' . $prog;
 
     if ( $config_settings{$prog} eq 1 or $config_settings{$prog} eq "" ) {
         return BOLD RED "Disabled";
@@ -382,7 +382,7 @@ sub IsDefaultOn {
             return DARK GREEN "On";
         }
         elsif ( IsAvailable( lc($prog) ) =~ 'Disabled' ) {
-            return BOLD RED 'Off';
+            return BOLD RED "Off";
         }
     }
 
@@ -888,8 +888,7 @@ sub DisplayTS {
     print "Awstats reverse DNS resolution: ";
     # This setting defaults to Off
     if ( exists( $config_settings{'awstatsreversedns'} )
-              and $config_settings{'awstatsreversedns'} == 1 )
-    {
+              and $config_settings{'awstatsreversedns'} == 1 ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -898,7 +897,7 @@ sub DisplayTS {
 
     print "Allow users to update Awstats from cPanel: ";
     # This setting defaults to Off
-    if ( exists($config_settings{'awstatsbrowserupdate'})
+    if ( exists($config_settings{'awstatsbrowserupdate'} )
              and $config_settings{'awstatsbrowserupdate'} == 1 ) {
         print DARK GREEN "On\n";
     }
