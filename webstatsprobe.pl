@@ -21,7 +21,7 @@ use File::HomeDir;
 use Getopt::Long;
 
 
-my $version = '1.2.6';
+my $version = '1.2.7';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -831,10 +831,12 @@ sub DomainResolves {
     my $donotresolve;
     my $timedout;
     my $notbound;
+    my @domlist;
+
+    # See what IPs are bound on the system
     chomp( my $bound = qx(/sbin/ifconfig) );
 
     # Grab domain list from the cPanel user file
-    my @domlist;
     while ( my ( $key, $value ) = each %cpuser_settings ) {
         if ( $key =~ /\ADNS/ ) {    # If $key line starts with DNS
             push( @domlist, $value );
