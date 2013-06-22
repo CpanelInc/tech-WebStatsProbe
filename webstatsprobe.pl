@@ -19,9 +19,10 @@ use Term::ANSIColor qw(:constants);
 $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Getopt::Long;
+use Net::DNS;
 
 
-my $version = '1.2.7';
+my $version = '1.3';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -827,14 +828,23 @@ sub DomainResolves {
 
     # Check to see if user's domains resolve to IPs bound on the server.
     # This doesn't run if --noquery is used.
+
+    # Instantiate resolver object to look up domain names, using Google's DNS.
+    my $res = Net::DNS::Resolver->new(
+        nameservers => [ qw(8.8.8.8 8.8.4.4) ],
+        recurse     => 0,
+        debug       => 0,
+    );
+    
     my $user = shift;
     my $donotresolve;
     my $timedout;
     my $notbound;
+    my $ip;
     my @domlist;
 
     # See what IPs are bound on the system
-    chomp( my $bound = qx(/sbin/ifconfig) );
+    chomp( my $iplist = qx(/sbin/ifconfig) );
 
     # Grab domain list from the cPanel user file
     while ( my ( $key, $value ) = each %cpuser_settings ) {
@@ -843,19 +853,28 @@ sub DomainResolves {
         }
     }
 
-    # For each domain in the list we see if google's resolver can resolve the IP
+    # For each domain in the list we see if we can resolve the IP
     foreach my $name (@domlist) {
-        chomp( my $ip = qx(dig \@8.8.8.8 +short $name) );
+        my $query = $res->query( $name, 'A' );
+        if ($query) {
+            foreach my $rr ( grep { $_->type eq 'A' } $query->answer ) {
+                $ip = $rr->address;
+            }
 
-        # If it can't be resolved..
-        if ( $ip eq "" ) {
-            $donotresolve .= "$name\n";
+            # If the domain resolves, just not to an IP not on this server
+            if ( $iplist !~ $ip ) {
+                $notbound .= "$name\n";
+            }
         }
-        elsif ( $ip =~ 'connection timed out' ) {  # Else if the DNS lookup times out...
-            $timedout .= "$name\n";
-        }
-        elsif ( $bound !~ $ip ) { # Else if the domain does resolve, just not to an IP on this server..
-            $notbound .= "$name\n";
+        else {
+            # If it doesn't resolve at all (NXDOMAIN)
+            my $error_string = $res->errorstring;
+            if ( $error_string eq 'NXDOMAIN' ) {
+                $donotresolve .= "$name\n";
+            }
+            elsif ( $error_string eq 'Send error: Operation not permitted' ) {
+                $timedout .= "$name\n";
+            }
         }
     }
 
@@ -874,7 +893,7 @@ sub DomainResolves {
             print BOLD RED "$donotresolve\n";
         }
         if ($timedout) {
-            print "Lookups for the following domains timed out:\n";
+            print "Lookups for the following domains timed out or could not be completed:\n";
             print BOLD RED "$timedout\n";
         }
         if ($notbound) {
