@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.3';
+my $version = '1.3.1';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -53,8 +53,9 @@ my $blockedprog = 0;
 # Check if necessary programs are missing #
 ###########################################
 
-if ( !-x '/usr/bin/dig' && $noquery == 0 ) {
-    die "Dig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
+if ( ($user and $noquery == 0 ) and 
+   ( !-x '/sbin/ifconfig' or !-e '/sbin/ifconfig' ) ) {
+    die "ifconfig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
 }
 
 #####################
@@ -93,9 +94,7 @@ if ($CPCONFIG_FH) {
     while (<$CPCONFIG_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
-        if ( defined($value) ) {
-            $config_settings{$option} = $value;
-        }
+        $config_settings{$option} = $value if defined($value);
     }
 }
 
@@ -104,9 +103,7 @@ if ($STATSCONFIG_FH) {
     while (<$STATSCONFIG_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
-        if ( defined($value) ) {
-            $stats_settings{$option} = $value;
-        }
+        $stats_settings{$option} = $value if defined($value);
     }
 }
 
@@ -115,9 +112,7 @@ if ($CPUSER_FH) {
     while (<$CPUSER_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
-        if ( defined($value) ) {
-            $cpuser_settings{$option} = $value;
-        }
+        $cpuser_settings{$option} = $value if defined($value);
     }
 }
 
@@ -126,9 +121,7 @@ if ($CPUSERSTATS_FH) {
     while (<$CPUSERSTATS_FH>) {
         chomp;
         my ( $option, $value ) = split('=');
-        if ( defined($value) ) {
-            $cpuser_stats_settings{$option} = $value;
-        }
+        $cpuser_stats_settings{$option} = $value if defined($value);
     }
 }
 
@@ -259,12 +252,12 @@ print "\n";
 close($CPCONFIG_FH);
 
 # If there was no /etc/stats.conf, then no need to close the FH for it.
-close($STATSCONFIG_FH) if ( defined($STATSCONFIG_FH) );
+close($STATSCONFIG_FH) if defined($STATSCONFIG_FH);
 close($CPVERSION_FH);
 
 # If $user wasn't supplied as an arg, then no need to close FHs for it..
-close($CPUSER_FH)      if ( defined($user) );
-close($CPUSERSTATS_FH) if ( defined($user) and defined($CPUSERSTATS_FH) );
+close($CPUSER_FH)      if defined($user);
+close($CPUSERSTATS_FH) if defined($user) and defined($CPUSERSTATS_FH);
 
 ##############
 ## Functions #
