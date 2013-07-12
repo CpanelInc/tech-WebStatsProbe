@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.3.1';
+my $version = '1.3.2';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -463,12 +463,14 @@ sub KeepingUp {
 
         # now let's remove '/var/cpanel/lastrun', then '/stats/' so we can
         # get just the username
-        my $user = $file;
+        my $user = $file
         $user    =~ s/\/var\/cpanel\/lastrun\///;
         $user    =~ s/\/stats//;
         if ( $duration > $interval && -d "/var/cpanel/userdata/$user" ) {
             my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
-            push( @outofdate, $olduser );
+            if ( -e "/var/cpanel/users/$olduser" ) {
+                push( @outofdate, $olduser );
+            }
         }
     }
 
