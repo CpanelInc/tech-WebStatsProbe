@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.3.2';
+my $version = '1.4';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -89,41 +89,10 @@ if ( defined($user) ) {
 
 # If file handles are available, put the settings into hashes to use later
 
-my %config_settings;
-if ($CPCONFIG_FH) {
-    while (<$CPCONFIG_FH>) {
-        chomp;
-        my ( $option, $value ) = split('=');
-        $config_settings{$option} = $value if defined($value);
-    }
-}
-
-my %stats_settings;
-if ($STATSCONFIG_FH) {
-    while (<$STATSCONFIG_FH>) {
-        chomp;
-        my ( $option, $value ) = split('=');
-        $stats_settings{$option} = $value if defined($value);
-    }
-}
-
-my %cpuser_settings;
-if ($CPUSER_FH) {
-    while (<$CPUSER_FH>) {
-        chomp;
-        my ( $option, $value ) = split('=');
-        $cpuser_settings{$option} = $value if defined($value);
-    }
-}
-
-my %cpuser_stats_settings;
-if ($CPUSERSTATS_FH) {
-    while (<$CPUSERSTATS_FH>) {
-        chomp;
-        my ( $option, $value ) = split('=');
-        $cpuser_stats_settings{$option} = $value if defined($value);
-    }
-}
+my %config_settings       = get_settings($CPCONFIG_FH)    if $CPCONFIG_FH;
+my %stats_settings        = get_settings($STATSCONFIG_FH) if $STATSCONFIG_FH;
+my %cpuser_settings       = get_settings($CPUSER_FH)      if $CPUSER_FH;
+my %cpuser_stats_settings = get_settings($CPUSERSTATS_FH) if $CPUSERSTATS_FH;
 
 ####################
 # Main code output #
@@ -249,6 +218,7 @@ print "\n";
 ###########
 # Cleanup #
 ###########
+
 close($CPCONFIG_FH);
 
 # If there was no /etc/stats.conf, then no need to close the FH for it.
@@ -259,9 +229,20 @@ close($CPVERSION_FH);
 close($CPUSER_FH)      if defined($user);
 close($CPUSERSTATS_FH) if defined($user) and defined($CPUSERSTATS_FH);
 
-##############
-## Functions #
-##############
+################
+## Subroutines #
+################
+
+sub get_settings {
+    my $FH = shift;
+    my %settings;
+    while (<$FH>) {
+        chomp;
+        my ( $option, $value ) = split('=');
+        $settings{$option} = $value if defined($value);
+    }
+    return %settings;
+}
 
 sub BlackedHours {
 
@@ -463,7 +444,7 @@ sub KeepingUp {
 
         # now let's remove '/var/cpanel/lastrun', then '/stats/' so we can
         # get just the username
-        my $user = $file
+        my $user = $file;
         $user    =~ s/\/var\/cpanel\/lastrun\///;
         $user    =~ s/\/stats//;
         if ( $duration > $interval && -d "/var/cpanel/userdata/$user" ) {
