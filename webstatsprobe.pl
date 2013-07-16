@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4';
+my $version = '1.4.1';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -77,6 +77,7 @@ if ( defined($user) ) {
       or die "Could not open /var/cpanel/users/$user, $!\n";
 
     my $homedir = File::HomeDir::users_home($user);
+    # New user won't have stats.conf, so only open if it exists
     if ( -f "$homedir/tmp/stats.conf" ) {
         open( $CPUSERSTATS_FH, '<', "$homedir/tmp/stats.conf" )
           or die "Could not open '$homedir/tmp/stats.conf', $!\n";
@@ -89,7 +90,7 @@ if ( defined($user) ) {
 
 # If file handles are available, put the settings into hashes to use later
 
-my %config_settings       = get_settings($CPCONFIG_FH)    if $CPCONFIG_FH;
+my %config_settings       = get_settings($CPCONFIG_FH);
 my %stats_settings        = get_settings($STATSCONFIG_FH) if $STATSCONFIG_FH;
 my %cpuser_settings       = get_settings($CPUSER_FH)      if $CPUSER_FH;
 my %cpuser_stats_settings = get_settings($CPUSERSTATS_FH) if $CPUSERSTATS_FH;
