@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.1';
+my $version = '1.4.2';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -53,7 +53,7 @@ my $blockedprog = 0;
 # Check if necessary programs are missing #
 ###########################################
 
-if ( ($user and $noquery == 0 ) and 
+if ( ( $user and $noquery == 0 ) and 
    ( !-x '/sbin/ifconfig' or !-e '/sbin/ifconfig' ) ) {
     die "ifconfig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
 }
@@ -448,7 +448,7 @@ sub KeepingUp {
         my $user = $file;
         $user    =~ s/\/var\/cpanel\/lastrun\///;
         $user    =~ s/\/stats//;
-        if ( $duration > $interval && -d "/var/cpanel/userdata/$user" ) {
+        if ( $duration > $interval and -d "/var/cpanel/userdata/$user" ) {
             my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
             if ( -e "/var/cpanel/users/$olduser" ) {
                 push( @outofdate, $olduser );
@@ -565,6 +565,7 @@ sub Awwwwstats {
         print BOLD RED
           "/usr/local/cpanel/3rdparty/awstats.pl is not 755 permissions!\n";
     }
+
 }
 
 sub CheckBadPerms {
@@ -806,19 +807,15 @@ sub DomainResolves {
     # Check to see if user's domains resolve to IPs bound on the server.
     # This doesn't run if --noquery is used.
 
-    # Instantiate resolver object to look up domain names, using Google's DNS.
-    my $res = Net::DNS::Resolver->new(
-        nameservers => [ qw(8.8.8.8 8.8.4.4) ],
-        recurse     => 0,
-        debug       => 0,
-    );
-    
     my $user = shift;
     my $donotresolve;
     my $timedout;
     my $notbound;
     my $ip;
     my @domlist;
+
+    # Instantiate resolver object to look up domain names, using Google's DNS.
+    my $res = Net::DNS::Resolver->new;
 
     # See what IPs are bound on the system
     chomp( my $iplist = qx(/sbin/ifconfig) );
@@ -886,7 +883,7 @@ sub DisplayTS {
     print "Awstats reverse DNS resolution: ";
     # This setting defaults to Off
     if ( exists( $config_settings{'awstatsreversedns'} )
-              and $config_settings{'awstatsreversedns'} == 1 ) {
+             and $config_settings{'awstatsreversedns'} == 1 ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -896,7 +893,7 @@ sub DisplayTS {
     print "Allow users to update Awstats from cPanel: ";
     # This setting defaults to Off
     if ( exists($config_settings{'awstatsbrowserupdate'} )
-             and $config_settings{'awstatsbrowserupdate'} == 1 ) {
+            and $config_settings{'awstatsbrowserupdate'} == 1 ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -906,7 +903,7 @@ sub DisplayTS {
     print "Delete each domain's access logs after stats run: ";
     # This setting defaults to On
     if ( exists($config_settings{'dumplogs'}) 
-             and $config_settings{'dumplogs'} == 0 ) {
+            and $config_settings{'dumplogs'} == 0 ) {
         print DARK GREEN "Off\n";
     }
     else {
