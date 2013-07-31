@@ -317,10 +317,10 @@ sub IsAvailable {
     $prog = 'skip' . $prog;
 
     if ( $config_settings{$prog} eq 1 or $config_settings{$prog} eq "" ) {
-        return BOLD RED "Disabled";
+        return BOLD RED 'Disabled';
     }
     else {
-        return DARK GREEN "Available to Users";
+        return DARK GREEN 'Available to Users';
     }
 
 }
@@ -333,32 +333,32 @@ sub IsDefaultOn {
     if (%stats_settings) {
         if ( !exists( $stats_settings{'DEFAULTGENS'} ) ) {
             # If no DEFAULTGENS in /etc/stats.conf
-            return DARK GREEN "On";
+            return DARK GREEN 'On';
         }
         else {
             if ( $stats_settings{'DEFAULTGENS'} !~ $prog ) {
                 # Else it is there but the specific prog name isn't in the DEFAULTGENS line
                 # This also takes into account DEFAULTGENS=0 which means all progs set to not active by default
-                return BOLD RED "Off";
+                return BOLD RED 'Off';
             }
             elsif ( $stats_settings{'DEFAULTGENS'} =~ $prog
                 and IsAvailable( lc($prog) ) =~ 'Disabled' ) {
                    # Else, if the prog is in DEFAULTGENS (meaning it was set to Active by default,
                    # but the prog was then Disabled
-                return BOLD RED "Off";
+                return BOLD RED 'Off';
             }
             else {
-                return DARK GREEN "On";
+                return DARK GREEN 'On';
             }
         }
     }
     else {
         # Stats haven't been customized at all in WHM, so no stats.conf yet
         if ( IsAvailable( lc($prog) ) =~ 'Available' ) {
-            return DARK GREEN "On";
+            return DARK GREEN 'On';
         }
         elsif ( IsAvailable( lc($prog) ) =~ 'Disabled' ) {
-            return BOLD RED "Off";
+            return BOLD RED 'Off';
         }
     }
 
@@ -370,22 +370,22 @@ sub AllAllowed {
     if (%stats_settings) {
         if ( exists($stats_settings{'ALLOWALL'})
                 and $stats_settings{'ALLOWALL'} eq 'yes' ) {
-            return DARK GREEN "Yes";
+            return DARK GREEN 'Yes';
         }
         elsif ( !$stats_settings{'ALLOWALL'}
             and !$stats_settings{'VALIDUSERS'} ) {
             # Else if ALLOWALL and
             # VALIDUSERS had no values
-            return DARK GREEN "No";
+            return DARK GREEN 'No';
         }
         else {
             # else if ALLOWALL is not equal to yes
-            return BOLD RED "No";
+            return BOLD RED 'No';
         }
     }
     else {
         # If /etc/stats.conf doesn't exist
-        return DARK GREEN "No";
+        return DARK GREEN 'No';
     }
 
 }
@@ -400,17 +400,17 @@ sub UserAllowed {
         my $user = shift;
         if (    $stats_settings{'VALIDUSERS'}
             and $stats_settings{'VALIDUSERS'} =~ /\b$user\b/ ) {
-            return "Yes";
+            return 'Yes';
         }
         else {
             # Else there are no users who can pick stat progs or supplied arg user
             # isn't in the list
-            return "No";
+            return 'No';
         }
     }
     else {
         # Else if there are no users configured who can choose their own progs
-        return "No";
+        return 'No';
     }
 
 }
@@ -421,10 +421,10 @@ sub LogDRunning {
     my $check = qx(/scripts/restartsrv_cpanellogd --check);
 
     if ( !$check ) {
-        return DARK GREEN "Running";
+        return DARK GREEN 'Running';
     }
     else {
-        return BOLD RED "Not Running";
+        return BOLD RED 'Not Running';
     }
 
 }
@@ -457,11 +457,11 @@ sub KeepingUp {
     }
 
     if (@outofdate) {
-        return BOLD RED "No", BOLD WHITE "Users out of date:\n",
+        return BOLD RED 'No', BOLD WHITE "Users out of date:\n",
           BOLD RED "@outofdate";
     }
     else {
-        return DARK GREEN "Yes";
+        return DARK GREEN 'Yes';
     }
 
 }
@@ -480,10 +480,10 @@ sub UserKeepUp {
         my $mtime    = ( stat($file) )[9];
         my $duration = $time - $mtime;
         if ( $duration > $interval ) {
-            return BOLD RED "No";
+            return BOLD RED 'No';
         }
         else {
-            return DARK GREEN "Yes";
+            return DARK GREEN 'Yes';
         }
     }
     else {
@@ -507,10 +507,10 @@ sub BwUserKeepUp {
         my $mtime    = ( stat($file) )[9];
         my $duration = $time - $mtime;
         if ( $duration > $interval ) {
-            return BOLD RED "No";
+            return BOLD RED 'No';
         }
         else {
-            return DARK GREEN "Yes";
+            return DARK GREEN 'Yes';
         }
     }
     else {
@@ -528,10 +528,10 @@ sub LastRun {
     if ( -f $file ) {
         my $mtime = ( stat($file) )[9];
         $mtime = localtime($mtime);
-        return DARK GREEN "$mtime";
+        return DARK GREEN $mtime;
     }
     else {
-        return BOLD RED "Never";
+        return BOLD RED 'Never';
     }
 
 }
@@ -548,7 +548,7 @@ sub BwLastRun {
         return DARK GREEN $mtime;
     }
     else {
-        return BOLD RED "Never";
+        return BOLD RED 'Never';
     }
 
 }
@@ -585,10 +585,10 @@ sub HttpdConf {
     my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
 
     if ( $check =~ 'Syntax OK' ) {
-        return DARK GREEN "Syntax OK";
+        return DARK GREEN 'Syntax OK';
     }
     else {
-        return BOLD RED "Syntax Errors ",
+        return BOLD RED 'Syntax Errors ',
           BOLD WHITE "(Run: httpd configtest)\n\n",
           BOLD RED
 "*** This means that Apache can't do a graceful restart and that the domlogs will be 0 bytes in size, so therefore no new stats will be processed until httpd.conf is fixed! ***\n";
@@ -605,12 +605,12 @@ sub WhoCanPick {
         }
         else {
             # If there is no VALIDUSERS or it's false
-            print DARK GREEN "Nobody";
+            print DARK GREEN 'Nobody';
         }
     }
     else {
         # If stats.conf doesn't exist yet, then no users can choose (default behavior)
-        print DARK GREEN "Nobody";
+        print DARK GREEN 'Nobody';
     }
     return;
 
@@ -660,7 +660,7 @@ sub GetEnabledDoms {
             and ( IsDefaultOn($prog) =~ 'On' ) ) {
 
             foreach my $dom (@alldoms) {
-                $dom .= "=yes";
+                $dom .= '=yes';
                 push( @domains, $dom );
             }
             return @domains;
@@ -698,10 +698,10 @@ sub DumpDomainConfig {
             my ( $domain, $enabled ) = split( '=', $dom );
             print "  $domain = ";
             if ( $enabled eq 'yes' ) {
-                print DARK GREEN "$enabled", "\n";
+                print DARK GREEN "$enabled\n";
             }
             elsif ( $enabled eq 'no' ) {
-                print BOLD RED "$enabled", "\n";
+                print BOLD RED "$enabled\n";
             }
         }
     }
@@ -725,7 +725,7 @@ sub IsBlocked {
         return 'Blocked';
     }
     else {
-        return "";
+        return '';
     }
 
 }
@@ -794,10 +794,10 @@ sub CanRunLogaholic {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
         if ( $version ge '1131' ) {
-            return "Yes";
+            return 'Yes';
         }
         else {
-            return "No";
+            return 'No';
         }
     }
 }
@@ -814,7 +814,7 @@ sub DomainResolves {
     my $ip;
     my @domlist;
 
-    # Instantiate resolver object to look up domain names, using Google's DNS.
+    # Instantiate resolver object to look up domain names.
     my $res = Net::DNS::Resolver->new;
 
     # See what IPs are bound on the system
