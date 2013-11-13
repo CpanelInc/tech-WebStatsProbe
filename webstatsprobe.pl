@@ -27,9 +27,7 @@ my $version = '1.4.2';
 ###################################################
 # Check to see if the calling user is root or not #
 ###################################################
-if ( $> != 0 ) {
-    die "This script needs to be ran as the root user\n";
-}
+die "This script needs to be ran as the root user\n" if $> != 0;
 
 ###########################################################
 # Parse positional parameters for flags and set variables #
@@ -141,7 +139,7 @@ else {
     if ( -e $CPUSER_FH and -d "/var/cpanel/userdata/$user" ) {
         print "\n";
         print "Available flags when running \"$0 --<cP user>\" (if any):\n";
-            print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
+        print "    --noquery (turns off DNS lookups for each user domain)\n" if $noquery == 0;
         print "\n";
         print DARK CYAN "[ Web Stats Probe v$version - Results For: ", BOLD YELLOW $user , DARK CYAN " ]\n";
         print "\n";
@@ -450,15 +448,12 @@ sub KeepingUp {
         $user    =~ s/\/stats//;
         if ( $duration > $interval and -d "/var/cpanel/userdata/$user" ) {
             my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
-            if ( -e "/var/cpanel/users/$olduser" ) {
-                push( @outofdate, $olduser );
-            }
+            push( @outofdate, $olduser ) if ( -e "/var/cpanel/users/$olduser" );
         }
     }
 
     if (@outofdate) {
-        return BOLD RED 'No', BOLD WHITE "Users out of date:\n",
-          BOLD RED "@outofdate";
+        return BOLD RED 'No', BOLD WHITE "Users out of date:\n", BOLD RED "@outofdate";
     }
     else {
         return DARK GREEN 'Yes';
@@ -562,8 +557,7 @@ sub Awwwwstats {
     if ( $mode ne '0755' ) {
         print "\n";
         print BOLD RED "AWStats Problem = Yes\n";
-        print BOLD RED
-          "/usr/local/cpanel/3rdparty/awstats.pl is not 755 permissions!\n";
+        print BOLD RED "/usr/local/cpanel/3rdparty/awstats.pl is not 755 permissions!\n";
     }
 
 }
@@ -588,8 +582,7 @@ sub HttpdConf {
         return DARK GREEN 'Syntax OK';
     }
     else {
-        return BOLD RED 'Syntax Errors ',
-          BOLD WHITE "(Run: httpd configtest)\n\n",
+        return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: httpd configtest)\n\n",
           BOLD RED
 "*** This means that Apache can't do a graceful restart and that the domlogs will be 0 bytes in size, so therefore no new stats will be processed until httpd.conf is fixed! ***\n";
     }
@@ -626,9 +619,7 @@ sub GetEnabledDoms {
     while ( my ( $param,$value ) = each %cpuser_settings ) {
         # If $param has a value and the line starts with DNS
         # we put the domain name in @alldoms
-        if ( defined($param) and $param =~ /\ADNS/ ) {
-            push( @alldoms, $value );
-        }
+        push( @alldoms, $value ) if ( defined($param) and $param =~ /\ADNS/ );
     }
 
     # If $homedir/tmp/stats.conf exists then for each domain we want to see if
@@ -822,9 +813,7 @@ sub DomainResolves {
 
     # Grab domain list from the cPanel user file
     while ( my ( $key, $value ) = each %cpuser_settings ) {
-        if ( $key =~ /\ADNS/ ) {    # If $key line starts with DNS
-            push( @domlist, $value );
-        }
+        push( @domlist, $value ) if ( $key =~ /\ADNS/ ); # If $key line starts with DNS
     }
 
     # For each domain in the list we see if we can resolve the IP
