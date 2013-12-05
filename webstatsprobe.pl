@@ -11,7 +11,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 
 # Tested on cPanel 11.30 - 11.38
 
-# Maintainers: Charles Boyd, Anne Sipes, Paul Trost
+# Maintainers: Anne Sipes, Paul Trost
 
 use warnings;
 use strict;
@@ -27,6 +27,7 @@ my $version = '1.4.2';
 ###################################################
 # Check to see if the calling user is root or not #
 ###################################################
+
 die "This script needs to be ran as the root user\n" if $> != 0;
 
 ###########################################################
