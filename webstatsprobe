@@ -9,7 +9,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.42
+# Tested on cPanel 11.30 - 11.44
 
 # Maintainers: Anne Sipes, Paul Trost
 
@@ -22,7 +22,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.2';
+my $version = '1.4.3';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -312,8 +312,7 @@ sub IsAvailable {
 
  # See if the stats program is disabled in tweak settings, if so return Disabled
  # else return Available
-    my $prog = shift;
-    $prog = 'skip' . $prog;
+    my $prog = 'skip' . shift;
 
     if ( $config_settings{$prog} eq 1 or $config_settings{$prog} eq "" ) {
         return BOLD RED 'Disabled';
@@ -814,7 +813,7 @@ sub DomainResolves {
 
     # Grab domain list from the cPanel user file
     while ( my ( $key, $value ) = each %cpuser_settings ) {
-        push( @domlist, $value ) if ( $key =~ /\ADNS/ ); # If $key line starts with DNS
+        push( @domlist, $value ) if ( $key =~ /^DNS/ ); # If $key line starts with DNS
     }
 
     # For each domain in the list we see if we can resolve the IP
