@@ -9,9 +9,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.44
-
-# Maintainers: Anne Sipes, Paul Trost
+# Tested on cPanel 11.30 - 11.46
 
 use warnings;
 use strict;
@@ -22,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.3';
+my $version = '1.4.4';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -418,13 +416,7 @@ sub LogDRunning {
     # Check if cpanellogd is running. Null output from --check means it is.
     my $check = qx(/scripts/restartsrv_cpanellogd --check);
 
-    if ( !$check ) {
-        return DARK GREEN 'Running';
-    }
-    else {
-        return BOLD RED 'Not Running';
-    }
-
+    return (!$check) ? return DARK GREEN 'Running' : BOLD RED 'Not Running';
 }
 
 sub KeepingUp {
@@ -474,12 +466,7 @@ sub UserKeepUp {
     if ( -f $file ) {    # necessary as as file won't exist on a new user
         my $mtime    = ( stat($file) )[9];
         my $duration = $time - $mtime;
-        if ( $duration > $interval ) {
-            return BOLD RED 'No';
-        }
-        else {
-            return DARK GREEN 'Yes';
-        }
+        return ( $duration > $interval ) ? BOLD RED 'No' : DARK GREEN 'Yes';
     }
     else {
         return BOLD RED "Hasn't processed yet";
@@ -501,12 +488,7 @@ sub BwUserKeepUp {
     if ( -f $file ) {
         my $mtime    = ( stat($file) )[9];
         my $duration = $time - $mtime;
-        if ( $duration > $interval ) {
-            return BOLD RED 'No';
-        }
-        else {
-            return DARK GREEN 'Yes';
-        }
+        return ( $duration > $interval ) ? BOLD RED 'No' : DARK GREEN 'Yes';
     }
     else {
         return BOLD RED "Hasn't been processed yet";
@@ -784,12 +766,7 @@ sub CanRunLogaholic {
     while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
-        if ( $version ge '1131' ) {
-            return 'Yes';
-        }
-        else {
-            return 'No';
-        }
+        return ( $version ge '1131' ) ? 'Yes' : 'No';
     }
 }
 
