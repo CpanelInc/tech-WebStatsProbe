@@ -20,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.4';
+my $version = '1.4.5';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -766,7 +766,9 @@ sub CanRunLogaholic {
     while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
-        return ( $version ge '1131' ) ? 'Yes' : 'No';
+        #return ( $version ge '1131' ) ? 'Yes' : 'No';
+        # We are removing logaholic again in 11.48.  
+        return ( $version ge '1131' or $version le '1148' ) ? 'Yes' : 'No';
     }
 }
 
