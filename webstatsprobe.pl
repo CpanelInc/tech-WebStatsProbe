@@ -131,6 +131,10 @@ if ( !defined($user) ) {
     if ( CanRunLogaholic() eq 'Yes' ) {
         print "LOGAHOLIC: ", IsAvailable('logaholic'), " (Active by Default: ", IsDefaultOn('LOGAHOLIC'), ")\n";
     }
+    else { 
+	print "\nAs of cPanel version 11.48, LOGAHOLIC is only available as a plugin\n";
+	print "See: http://www.logaholic.com/logaholic-cpanel-migration/ for more information.\n";
+    } 
 }
 else {
     # If called with a user argument, let's verify that user exists and display
@@ -768,7 +772,7 @@ sub CanRunLogaholic {
         $version =~ s/\.//g;    # remove the periods to compare it lexically
         #return ( $version ge '1131' ) ? 'Yes' : 'No';
         # We are removing logaholic again in 11.48.  
-        return ( $version ge '1131' or $version le '1148' ) ? 'Yes' : 'No';
+        return ( $version >= '1131' and $version < '1148' ) ? 'Yes' : 'No';
     }
 }
 
