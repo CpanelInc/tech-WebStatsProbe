@@ -9,7 +9,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.46
+# Tested on cPanel 11.30 - 11.48
 
 use warnings;
 use strict;
@@ -20,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.4';
+my $version = '1.4.5';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -762,11 +762,11 @@ sub WillRunForUser {
 
 sub CanRunLogaholic {
 
-    # Check if cPanel is >= 11.31 (when Logaholic was added).
+    # Check if cPanel is >= 11.31 (when Logaholic was added) and < 11.48 (when Logaholic was removed).
     while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
-        return ( $version ge '1131' ) ? 'Yes' : 'No';
+        return ( $version ge '1131' && $version le '1148' ) ? 'Yes' : 'No';
     }
 }
 
