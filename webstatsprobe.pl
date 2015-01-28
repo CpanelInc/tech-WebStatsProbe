@@ -20,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.4';
+my $version = '1.4.5';
 
 ###################################################
 # Check to see if the calling user is root or not #
