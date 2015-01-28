@@ -762,11 +762,11 @@ sub WillRunForUser {
 
 sub CanRunLogaholic {
 
-    # Check if cPanel is >= 11.31 (when Logaholic was added).
+    # Check if cPanel is >= 11.31 (when Logaholic was added) and < 11.48 (when Logaholic was removed).
     while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
-        return ( $version ge '1131' ) ? 'Yes' : 'No';
+        return ( $version ge '1131' && $version le '1148' ) ? 'Yes' : 'No';
     }
 }
 
