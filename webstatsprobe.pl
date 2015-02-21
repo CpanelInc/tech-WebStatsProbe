@@ -9,7 +9,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.46
+# Tested on cPanel 11.30 - 11.48
 
 use warnings;
 use strict;
@@ -20,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.5';
+my $version = '1.4.6';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -46,12 +46,22 @@ GetOptions(
 # Going to be used later by IsBlocked();
 my $blockedprog = 0;
 
+# Verify user file exists for given user
+if ( defined $user && !-e "/var/cpanel/users/$user" ) {
+    print "\n";
+    print "ERROR: User [ $user ] not found.\n";
+    print "You may have entered the wrong username, or /var/cpanel/$user or /var/cpanel/userdata/$user is missing.\n";
+    print "Usage: webstatsprobe --user <cP User>\n";
+    print "\n";
+    exit 1;
+}
+
 ###########################################
 # Check if necessary programs are missing #
 ###########################################
 
 if ( ( $user and $noquery == 0 ) and 
-   ( !-x '/sbin/ifconfig' or !-e '/sbin/ifconfig' ) ) {
+   ( !-x '/sbin/ifconfig' || !-e '/sbin/ifconfig' ) ) {
     die "ifconfig is either missing or not executable, please fix or pass --noquery flag to bypass DNS lookups.\n";
 }
 
@@ -87,10 +97,16 @@ if ( defined($user) ) {
 
 # If file handles are available, put the settings into hashes to use later
 
-my %config_settings       = get_settings($CPCONFIG_FH);
-my %stats_settings        = get_settings($STATSCONFIG_FH) if $STATSCONFIG_FH;
-my %cpuser_settings       = get_settings($CPUSER_FH)      if $CPUSER_FH;
-my %cpuser_stats_settings = get_settings($CPUSERSTATS_FH) if $CPUSERSTATS_FH;
+my %config_settings = get_settings($CPCONFIG_FH);
+
+my %stats_settings;
+%stats_settings = get_settings($STATSCONFIG_FH) if $STATSCONFIG_FH;
+
+my %cpuser_settings;
+%cpuser_settings = get_settings($CPUSER_FH) if $CPUSER_FH;
+
+my %cpuser_stats_settings;
+%cpuser_stats_settings = get_settings($CPUSERSTATS_FH) if $CPUSERSTATS_FH;
 
 ####################
 # Main code output #
@@ -132,8 +148,8 @@ if ( !defined($user) ) {
         print "LOGAHOLIC: ", IsAvailable('logaholic'), " (Active by Default: ", IsDefaultOn('LOGAHOLIC'), ")\n";
     }
     else { 
-	print "\nAs of cPanel version 11.48, LOGAHOLIC is only available as a plugin\n";
-	print "See: http://www.logaholic.com/logaholic-cpanel-migration/ for more information.\n";
+    	print "\nAs of cPanel version 11.48, LOGAHOLIC is only available as a plugin\n";
+    	print "See: http://www.logaholic.com/logaholic-cpanel-migration/ for more information.\n";
     } 
 }
 else {
@@ -197,13 +213,6 @@ else {
             print "To use the default setting of all apps available, remove the STATGENS line from the cPanel user file.\n";
         }
     }
-    else {
-        # Otherwise we say too bad so sad.
-        print "\n";
-        print "ERROR: User [ $user ] not found.\n";
-        print "You may have entered the wrong username, or /var/cpanel/$user or /var/cpanel/userdata/$user is missing.\n";
-        print "Usage: webstatsprobe <cP User>\n";
-    }
 }
 
 print "\n";
@@ -247,7 +256,6 @@ sub get_settings {
 }
 
 sub BlackedHours {
-
     # Get the blackout hours and display if stats can run within those hours
     if ( $stats_settings{'BLACKHOURS'} ) {
 
@@ -281,11 +289,10 @@ sub BlackedHours {
         # print "Never"
         return DARK GREEN "Never ", BOLD WHITE "(Allowed Time: ", DARK GREEN "24 hours", BOLD WHITE ")";
     }
-
+    return;
 }
 
 sub LogsRunEvery {
-
  # Show how often stats are set to process, if value not set then return default
  # of 24.
     if ( $config_settings{'cycle_hours'} ) {
@@ -294,11 +301,10 @@ sub LogsRunEvery {
     else {
         return 24;
     }
-
+    return;
 }
 
 sub BandwidthRunsEvery {
-
     # Show how often bandwidth is set to process, if value not set then return
     # default of 2.
     if ( $config_settings{'bwcycle'} ) {
@@ -307,26 +313,24 @@ sub BandwidthRunsEvery {
     else {
         return 2;
     }
-
+    return;
 }
 
 sub IsAvailable {
-
  # See if the stats program is disabled in tweak settings, if so return Disabled
  # else return Available
     my $prog = 'skip' . shift;
 
-    if ( $config_settings{$prog} eq 1 or $config_settings{$prog} eq "" ) {
+    if ( $config_settings{$prog} == 1 || $config_settings{$prog} eq "" ) {
         return BOLD RED 'Disabled';
     }
     else {
         return DARK GREEN 'Available to Users';
     }
-
+    return;
 }
 
 sub IsDefaultOn {
-
    # Make sure we're looking for the stats program in upper case, and display if
    # the stats program is set to to active by default or not
     my $prog = uc(shift);
@@ -361,19 +365,18 @@ sub IsDefaultOn {
             return BOLD RED 'Off';
         }
     }
-
+    return;
 }
 
 sub AllAllowed {
-
     # Display if per WHM all users are allowed to pick stats programs
     if (%stats_settings) {
         if ( exists($stats_settings{'ALLOWALL'})
-                and $stats_settings{'ALLOWALL'} eq 'yes' ) {
+                && $stats_settings{'ALLOWALL'} eq 'yes' ) {
             return DARK GREEN 'Yes';
         }
         elsif ( !$stats_settings{'ALLOWALL'}
-            and !$stats_settings{'VALIDUSERS'} ) {
+            || !$stats_settings{'VALIDUSERS'} ) {
             # Else if ALLOWALL and
             # VALIDUSERS had no values
             return DARK GREEN 'No';
@@ -387,11 +390,10 @@ sub AllAllowed {
         # If /etc/stats.conf doesn't exist
         return DARK GREEN 'No';
     }
-
+    return;
 }
 
 sub UserAllowed {
-
     # This UserAllowed function is called by the main body and is necessary to
     # output the warning for stats.conf. This function however is needed when
     # only yes/no output is required by other functions which call it such as
@@ -412,11 +414,10 @@ sub UserAllowed {
         # Else if there are no users configured who can choose their own progs
         return 'No';
     }
-
+    return;
 }
 
 sub LogDRunning {
-
     # Check if cpanellogd is running. Null output from --check means it is.
     my $check = qx(/scripts/restartsrv_cpanellogd --check);
 
@@ -424,7 +425,6 @@ sub LogDRunning {
 }
 
 sub KeepingUp {
-
     # Find out if there is a stats file under /lastrun that is greater than the
     # (stats processing interval * 60 * 60), but only if that file is owned by a
     # current cPanel user
@@ -454,11 +454,10 @@ sub KeepingUp {
     else {
         return DARK GREEN 'Yes';
     }
-
+    return;
 }
 
 sub UserKeepUp {
-
     # Display if the user's stats are being processed in time
     # $interval is running the return value of logsrunevery * 60 * 60 to get the
     # amount of seconds (default of 84400, or 24 hours)
@@ -475,11 +474,10 @@ sub UserKeepUp {
     else {
         return BOLD RED "Hasn't processed yet";
     }
-
+    return;
 }
 
 sub BwUserKeepUp {
-
     # Display if the user's stats are being processed in time
     # $interval is running the return value of logsrunevery * 60 to get the
     # amount of minutes (default of 120, or 2 hours)
@@ -497,11 +495,10 @@ sub BwUserKeepUp {
     else {
         return BOLD RED "Hasn't been processed yet";
     }
-
+    return;
 }
 
 sub LastRun {
-
     # Display when the user's stats were last ran
     my $user = shift;
     my $file = "/var/cpanel/lastrun/$user/stats";
@@ -514,11 +511,10 @@ sub LastRun {
     else {
         return BOLD RED 'Never';
     }
-
+    return;
 }
 
 sub BwLastRun {
-
     # Display when the user's bandwidth processing was last ran
     my $user = shift;
     my $file = "/var/cpanel/lastrun/$user/bandwidth";
@@ -531,11 +527,10 @@ sub BwLastRun {
     else {
         return BOLD RED 'Never';
     }
-
+    return;
 }
 
 sub Awwwwstats {
-
     # Check to see if awstats.pl doesn't have correct permissions
     my $awstats = '/usr/local/cpanel/3rdparty/bin/awstats.pl';
     my $mode = sprintf '%04o', ( stat $awstats )[2] & 07777;
@@ -543,24 +538,22 @@ sub Awwwwstats {
     if ( $mode ne '0755' ) {
         print "\n";
         print BOLD RED "AWStats Problem = Yes\n";
-        print BOLD RED "/usr/local/cpanel/3rdparty/awstats.pl is not 755 permissions!\n";
+        print BOLD RED "/usr/local/cpanel/3rdparty/bin/awstats.pl is not 755 permissions!\n";
     }
-
+    return;
 }
 
 sub CheckBadPerms {
-    
     if ( defined($STATSCONFIG_FH) ) {
         my $mode = sprintf '%04o', ( stat $STATSCONFIG_FH )[2] & 07777;
         if ( $mode ne '0644' ) {
             print BOLD RED "*** /etc/stats.conf doesn't have permissions of 644. If users have the ability to choose stat programs, this will cause the programs to be locked out by administrator in cPanel. ***\n";
         }
     }
-
+    return;
 }
 
 sub HttpdConf {
-
     # No stats if Apache conf has problems, so check syntax
     my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
 
@@ -572,11 +565,10 @@ sub HttpdConf {
           BOLD RED
 "*** This means that Apache can't do a graceful restart and that the domlogs will be 0 bytes in size, so therefore no new stats will be processed until httpd.conf is fixed! ***\n";
     }
-
+    return;
 }
 
 sub WhoCanPick {
-
     # Display users who have been specified to choose stats programs
     if (%stats_settings) {
         if ( $stats_settings{'VALIDUSERS'} ) {
@@ -592,11 +584,9 @@ sub WhoCanPick {
         print DARK GREEN 'Nobody';
     }
     return;
-
 }
 
 sub GetEnabledDoms {
-
     my $prog = uc(shift);
     my $user = shift;
     my @alldoms;
@@ -618,8 +608,8 @@ sub GetEnabledDoms {
             # in cPanel hasn't been re-saved yet then we display =yes,
             # otherwise =no.
             if ( ($cpuser_stats_settings{"$prog-$capsdom"} 
-              and $cpuser_stats_settings{"$prog-$capsdom"} eq 'yes' )
-             or ! $cpuser_stats_settings{"$prog-$capsdom"} ) {
+              && $cpuser_stats_settings{"$prog-$capsdom"} eq 'yes' )
+              || !$cpuser_stats_settings{"$prog-$capsdom"} ) {
                 push( @domains, "$dom=yes" );
             }
             else {
@@ -654,11 +644,10 @@ sub GetEnabledDoms {
             return @domains;
         }
     }
-
+    return;
 }
 
 sub DumpDomainConfig {
-    
     my $prog = shift;
     my $user = shift;
     my @doms = GetEnabledDoms( $prog, $user );
@@ -682,11 +671,10 @@ sub DumpDomainConfig {
             }
         }
     }
-
+    return;
 }
 
 sub IsBlocked {
-
     my $prog = uc(shift);
     my $user = shift;
 
@@ -696,7 +684,7 @@ sub IsBlocked {
     # Statistics Software Configuration >> User Permissions >> Choose Users >>
     # Choose Specific Stats Programs for
     if (    $cpuser_settings{'STATGENS'}
-        and $cpuser_settings{'STATGENS'} !~ $prog ) {
+         && $cpuser_settings{'STATGENS'} !~ $prog ) {
 
         $blockedprog = 1;
         return 'Blocked';
@@ -704,7 +692,6 @@ sub IsBlocked {
     else {
         return '';
     }
-
 }
 
 sub WillRunForUser {
@@ -761,19 +748,18 @@ sub WillRunForUser {
         }
     }
     return;
-
 }
 
 sub CanRunLogaholic {
-
     # Check if cPanel is >= 11.31 (when Logaholic was added).
     while (<$CPVERSION_FH>) {
         my $version = $_;
         $version =~ s/\.//g;    # remove the periods to compare it lexically
         #return ( $version ge '1131' ) ? 'Yes' : 'No';
         # We are removing logaholic again in 11.48.  
-        return ( $version >= '1131' and $version < '1148' ) ? 'Yes' : 'No';
+        return ( $version ge '1131' and $version lt '1148' ) ? 'Yes' : 'No';
     }
+    return;
 }
 
 sub DomainResolves {
@@ -792,7 +778,7 @@ sub DomainResolves {
     my $res = Net::DNS::Resolver->new;
 
     # See what IPs are bound on the system
-    chomp( my $iplist = qx(/sbin/ifconfig) );
+    chomp( my $iplist = qx(ip addr show) );
 
     # Grab domain list from the cPanel user file
     while ( my ( $key, $value ) = each %cpuser_settings ) {
@@ -808,7 +794,7 @@ sub DomainResolves {
             }
 
             # If the domain resolves, just not to an IP not on this server
-            if ( $iplist !~ $ip ) {
+            if ( $iplist !~ qr/$ip/ ) {
                 $notbound .= "$name\n";
             }
         }
@@ -826,12 +812,12 @@ sub DomainResolves {
 
     # If $donotresolve and $notbound and $timedout are null, meaning all lookups
     # were successful
-    if ( !$donotresolve and !$notbound and !$timedout ) {
+    if ( !$donotresolve && !$notbound && !$timedout ) {
         print DARK GREEN "Yes\n";
     }
     else {
         # Otherwise, if one or the other is not null..
-        if ( $donotresolve or $notbound or $timedout ) {
+        if ( $donotresolve || $notbound || $timedout ) {
             print BOLD RED "No\n";
         }
         if ($donotresolve) {
@@ -847,15 +833,14 @@ sub DomainResolves {
             print BOLD RED "$notbound\n";
         }
     }
-
+    return;
 }
 
 sub DisplayTS {
-
     print "Awstats reverse DNS resolution: ";
     # This setting defaults to Off
     if ( exists( $config_settings{'awstatsreversedns'} )
-             and $config_settings{'awstatsreversedns'} == 1 ) {
+              && $config_settings{'awstatsreversedns'} == 1 ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -865,7 +850,7 @@ sub DisplayTS {
     print "Allow users to update Awstats from cPanel: ";
     # This setting defaults to Off
     if ( exists($config_settings{'awstatsbrowserupdate'} )
-            and $config_settings{'awstatsbrowserupdate'} == 1 ) {
+             && $config_settings{'awstatsbrowserupdate'} == 1 ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -875,7 +860,7 @@ sub DisplayTS {
     print "Delete each domain's access logs after stats run: ";
     # This setting defaults to On
     if ( exists($config_settings{'dumplogs'}) 
-            and $config_settings{'dumplogs'} == 0 ) {
+             && $config_settings{'dumplogs'} == 0 ) {
         print DARK GREEN "Off\n";
     }
     else {
@@ -890,5 +875,5 @@ sub DisplayTS {
     else {
         print DARK GREEN "$config_settings{'extracpus'}\n";
     }
-
+    return;
 }
