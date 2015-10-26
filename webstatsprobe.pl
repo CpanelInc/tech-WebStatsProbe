@@ -9,7 +9,7 @@ eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel
 # http://cpanel.net
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.46
+# Tested on cPanel 11.30 - 11.52
 
 use warnings;
 use strict;
@@ -20,7 +20,7 @@ use Getopt::Long;
 use Net::DNS;
 
 
-my $version = '1.4.5';
+my $version = '1.4.6';
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -418,7 +418,12 @@ sub UserAllowed {
 sub LogDRunning {
 
     # Check if cpanellogd is running. Null output from --check means it is.
-    my $check = qx(/scripts/restartsrv_cpanellogd --check);
+    # For 11.50, we apparently changed the output of the restartsrv_* scripts.
+    my $check =0;
+    $check = qx[ /usr/local/cpanel/scripts/restartsrv_cpanellogd --check ];
+    if ($check =~ m/passed the check/) { 
+         $check=1;
+    }
 
     return (!$check) ? return DARK GREEN 'Running' : BOLD RED 'Not Running';
 }
