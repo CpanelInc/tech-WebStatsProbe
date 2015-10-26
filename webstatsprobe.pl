@@ -425,7 +425,7 @@ sub LogDRunning {
          $check=1;
     }
 
-    return (!$check) ? return DARK GREEN 'Running' : BOLD RED 'Not Running';
+    return ($check) ? return DARK GREEN 'Running' : BOLD RED 'Not Running';
 }
 
 sub KeepingUp {
