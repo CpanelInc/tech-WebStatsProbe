@@ -1,15 +1,12 @@
-#!/bin/sh
-eval 'if [ -x /usr/local/cpanel/3rdparty/bin/perl ]; then exec /usr/local/cpanel/3rdparty/bin/perl -x -- $0 ${1+"$@"}; else exec /usr/bin/perl -x $0 ${1+"$@"}; fi;'
-  if 0;
+#!/usr/local/cpanel/3rdparty/bin/perl
 
-#!/usr/bin/perl
-# Copyright(c) 2012 cPanel, Inc.
+# Copyright(c) 2016 cPanel, Inc.
 # All rights Reserved.
 # copyright@cpanel.net
-# http://cpanel.net
+# http://cpanel.com
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 11.52
+# Tested on cPanel 11.30 - 54
 
 use warnings;
 use strict;
@@ -18,9 +15,14 @@ $Term::ANSIColor::AUTORESET = 1;
 use File::HomeDir;
 use Getopt::Long;
 use Net::DNS;
+use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.4.7';
+my $version = '1.5.0';
+my $cycle_hours;
+my $bwcycle;
+my $prog;
+my $StatsProg;
 
 ###################################################
 # Check to see if the calling user is root or not #
@@ -69,8 +71,7 @@ if ( ( $user and $noquery == 0 ) and
 # Open File Handles #
 #####################
 
-open( my $CPCONFIG_FH, '<', '/var/cpanel/cpanel.config' )
-  or die "Could not open /var/cpanel/cpanel.config, $!\n";
+my $cpconf = Cpanel::Config::LoadCpConf::loadcpconf();
 
 open( my $STATSCONFIG_FH, '<', '/etc/stats.conf' )
   if ( -f "/etc/stats.conf" );    # no die here as stats.conf may not exist
@@ -96,8 +97,6 @@ if ( defined($user) ) {
 ###################################
 
 # If file handles are available, put the settings into hashes to use later
-
-my %config_settings = get_settings($CPCONFIG_FH);
 
 my %stats_settings;
 %stats_settings = get_settings($STATSCONFIG_FH) if $STATSCONFIG_FH;
@@ -230,8 +229,6 @@ print "\n";
 # Cleanup #
 ###########
 
-close($CPCONFIG_FH);
-
 # If there was no /etc/stats.conf, then no need to close the FH for it.
 close($STATSCONFIG_FH) if defined($STATSCONFIG_FH);
 close($CPVERSION_FH);
@@ -293,35 +290,22 @@ sub BlackedHours {
 }
 
 sub LogsRunEvery {
- # Show how often stats are set to process, if value not set then return default
- # of 24.
-    if ( $config_settings{'cycle_hours'} ) {
-        return $config_settings{'cycle_hours'};
-    }
-    else {
-        return 24;
-    }
-    return;
+ # Show how often stats are set to process, if value not set then return default of 24.
+	$cycle_hours = $cpconf->{'cycle_hours'};
+	return $cycle_hours ? $cycle_hours : 24;
 }
 
 sub BandwidthRunsEvery {
-    # Show how often bandwidth is set to process, if value not set then return
-    # default of 2.
-    if ( $config_settings{'bwcycle'} ) {
-        return $config_settings{'bwcycle'};
-    }
-    else {
-        return 2;
-    }
-    return;
+    # Show how often bandwidth is set to process, if value not set then return default of 2.
+	$bwcycle = $cpconf->{'bwcycle'};
+    return $bwcycle ? $bwcycle : 2;
 }
 
 sub IsAvailable {
- # See if the stats program is disabled in tweak settings, if so return Disabled
- # else return Available
-    my $prog = 'skip' . shift;
-
-    if ( $config_settings{$prog} == 1 || $config_settings{$prog} eq "" ) {
+ # See if the stats program is disabled in tweak settings, return Disabled or Available
+    $prog = 'skip' . shift;
+	$StatsProg = $cpconf->{$prog};
+	if ($StatsProg == 1 or !$StatsProg) { 
         return BOLD RED 'Disabled';
     }
     else {
@@ -843,9 +827,7 @@ sub DomainResolves {
 
 sub DisplayTS {
     print "Awstats reverse DNS resolution: ";
-    # This setting defaults to Off
-    if ( exists( $config_settings{'awstatsreversedns'} )
-              && $config_settings{'awstatsreversedns'} == 1 ) {
+    if ( $cpconf->{'awstatsreversedns'} ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -853,9 +835,7 @@ sub DisplayTS {
     }
 
     print "Allow users to update Awstats from cPanel: ";
-    # This setting defaults to Off
-    if ( exists($config_settings{'awstatsbrowserupdate'} )
-             && $config_settings{'awstatsbrowserupdate'} == 1 ) {
+    if ( $cpconf->{'awstatsbrowserupdate'} ) {
         print DARK GREEN "On\n";
     }
     else {
@@ -863,22 +843,69 @@ sub DisplayTS {
     }
 
     print "Delete each domain's access logs after stats run: ";
-    # This setting defaults to On
-    if ( exists($config_settings{'dumplogs'}) 
-             && $config_settings{'dumplogs'} == 0 ) {
-        print DARK GREEN "Off\n";
-    }
-    else {
+    if ( $cpconf->{'dumplogs'} ) {
         print DARK GREEN "On\n";
     }
+    else {
+        print DARK GREEN "Off\n";
+    }
 
-    print "Extra CPUs for server load: ";
-    # This setting defaults to 0
-    if ( !exists($config_settings{'extracpus'}) ) {
-        print DARK GREEN "0\n";
+	print "Archive logs in users home directory after each stats run (user configurable): ";
+    if ( $cpconf->{'default_archive-logs'} ) {
+        print DARK GREEN "On\n";
     }
     else {
-        print DARK GREEN "$config_settings{'extracpus'}\n";
+        print DARK GREEN "Off\n";
     }
+	
+	print "Remove previous months archive from users homedir (user configurable): ";
+    if ( $cpconf->{'default_remove-old-archived-logs'}) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+	
+	print "Keep master FTP log file: ";
+    if ( $cpconf->{'keepftplogs'}) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+
+	print "Keep log files at end of month: ";
+    if ( $cpconf->{'keeplogs'}) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+	
+	print "Keep stats logs: ";
+    if ( $cpconf->{'keepstatslog'}) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+	
+	print "Piped Logging Enabled: ";
+    if ( $cpconf->{'enable_piped_logs'}) {
+        print DARK GREEN "On\n";
+    }
+    else {
+        print DARK GREEN "Off\n";
+    }
+	
+	print "Stats log level: ";
+    print DARK GREEN $cpconf->{'statsloglevel'} . "\n";
+	
+	print "Log rotation size (in megabytes): ";
+    print DARK GREEN $cpconf->{'rotatelogs_size_threshhold_in_megabytes'} . "\n";
+	
+    print "Extra CPUs for server load: ";
+    print DARK GREEN $cpconf->{'extracpus'} . "\n";
+
     return;
 }
