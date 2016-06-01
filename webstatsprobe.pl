@@ -6,7 +6,7 @@
 # http://cpanel.com
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 54
+# Tested on cPanel 11.30 - 56
 
 use warnings;
 use strict;
@@ -18,7 +18,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.0';
+my $version = '1.5.1';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -182,9 +182,14 @@ else {
         print "KEEPING UP (BANDWIDTH): ", BwUserKeepUp($user), " (Last Run: ", BwLastRun($user), ")\n";
         if ( BwUserKeepUp($user) =~ 'No' ) {
             print "\n";
-            print BOLD RED "*** Bandwidth processing isn't keeping up! Please check the eximstats DB for corruption ***\n";
-            print "If the eximstats.sends table is corrupted then when runweblogs is ran the smtp rrd file won't generate correctly and the file /var/cpanel/lastrun/$user/bandwidth won't update.\n";
-            print BOLD RED "*** Please run: \"mysqlcheck -r eximstats\" ***\n";
+            if (-e("/etc/eximstatsdisable")) { 
+                print BOLD RED "*** eximstats is disabled! - Bandwidth statistics may be inaccurate ***\n";
+            }
+            else { 
+                print BOLD RED "*** Bandwidth processing isn't keeping up! Please check the eximstats DB for corruption ***\n";
+                print "If the eximstats.sends table is corrupted then when runweblogs is ran the smtp rrd file won't generate correctly and the file /var/cpanel/lastrun/$user/bandwidth won't update.\n";
+                print BOLD RED "*** Please run: \"mysqlcheck -r eximstats\" ***\n";
+            }
             print "\n";
         }
         print "ANALOG: ";
@@ -210,6 +215,28 @@ else {
             print "Choose Users >> Choose Specific Stats Programs for\n";
             print "\n";
             print "To use the default setting of all apps available, remove the STATGENS line from the cPanel user file.\n";
+        }
+        # Check if user has configured archive-logs and/or remove-old-archived-logs from Raw Access
+    	my $homedir = File::HomeDir::users_home($user);
+        if (-e("$homedir/.cpanel-logs")) { 
+			print BOLD RED "*** NOTICE: The $user account has a custom log configuration with the following: ***\n" unless(!(-s("$homedir/.cpanel-logs")));
+            open(CUSTSETTINGS,"$homedir/.cpanel-logs");
+            my @CUSTDATA=<CUSTSETTINGS>;
+            close(CUSTSETTINGS);
+            my $custsettline;
+            my $custname;
+            my $custvalue;
+            foreach $custsettline(@CUSTDATA) { 
+                chomp($custsettline);
+                ($custname,$custvalue)=(split(/=/,$custsettline));
+                $custvalue= ($custvalue) ? "Yes" : "No";
+                if ($custname eq "archive-logs") { 
+                    print "Archive logs in your home directory after each stats run: " . $custvalue . "\n";
+                }
+                if ($custname eq "remove-old-archived-logs") { 
+                    print "Remove previous months archive from your home directory: " . $custvalue . "\n";
+                }
+            }
         }
     }
 }
