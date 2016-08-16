@@ -18,7 +18,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.1';
+my $version = '1.5.2';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -332,8 +332,8 @@ sub IsAvailable {
  # See if the stats program is disabled in tweak settings, return Disabled or Available
     $prog = 'skip' . shift;
 	$StatsProg = $cpconf->{$prog};
-	if ($StatsProg == 1 or !$StatsProg) { 
-        return BOLD RED 'Disabled';
+	if ($StatsProg == 1) { 
+        return BOLD RED 'Disabled by root';
     }
     else {
         return DARK GREEN 'Available to Users';
