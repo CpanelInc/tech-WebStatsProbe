@@ -1,12 +1,12 @@
 #!/usr/local/cpanel/3rdparty/bin/perl
 
-# Copyright(c) 2016 cPanel, Inc.
+# Copyright(c) 2017 cPanel, Inc.
 # All rights Reserved.
 # copyright@cpanel.net
 # http://cpanel.com
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 56
+# Tested on cPanel 11.30 - 64
 
 use warnings;
 use strict;
@@ -18,7 +18,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.2';
+my $version = '1.5.4';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -44,6 +44,17 @@ GetOptions(
     'nots'    => \$nots,
     'user=s'  => \$user,    # =s is for --option with a value
 );
+
+# Get # of cores
+my $corecnt = qx[ grep -c 'model name' /proc/cpuinfo ];
+chomp($corecnt);
+# Get Load Average
+my ($loadavg) = (split(/\s+/,qx[ cat /proc/loadavg ]))[0];
+chomp($loadavg);
+
+if ($loadavg > $corecnt) { 
+    print BOLD RED "*** WARNING! Load Average is HIGH - Stats may stall ***\n";
+}
 
 # Going to be used later by IsBlocked();
 my $blockedprog = 0;
@@ -186,9 +197,14 @@ else {
                 print BOLD RED "*** eximstats is disabled! - Bandwidth statistics may be inaccurate ***\n";
             }
             else { 
-                print BOLD RED "*** Bandwidth processing isn't keeping up! Please check the eximstats DB for corruption ***\n";
-                print "If the eximstats.sends table is corrupted then when runweblogs is ran the smtp rrd file won't generate correctly and the file /var/cpanel/lastrun/$user/bandwidth won't update.\n";
-                print BOLD RED "*** Please run: \"mysqlcheck -r eximstats\" ***\n";
+                print BOLD RED "*** Bandwidth processing isn't keeping up! Checking the eximstats DB for corruption ***\n";
+                if (-e("/var/cpanel/eximstats_db.sqlite3.broken.*")) { 
+                    print "Found a broken eximstats_db file! Some corruption may have occurred.\n";
+                    print "Consider running /usr/local/cpanel/bin/updateeximstats\n";
+                }
+                else { 
+                    print "No broken eximstats_db files found in /var/cpanel\n";
+                }
             }
             print "\n";
         }
@@ -549,6 +565,7 @@ sub BwLastRun {
 sub Awwwwstats {
     # Check to see if awstats.pl doesn't have correct permissions
     my $awstats = '/usr/local/cpanel/3rdparty/bin/awstats.pl';
+    return if (!(-e($awstats))); 
     my $mode = sprintf '%04o', ( stat $awstats )[2] & 07777;
 
     if ( $mode ne '0755' ) {
