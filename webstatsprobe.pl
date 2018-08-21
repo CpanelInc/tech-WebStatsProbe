@@ -234,7 +234,7 @@ else {
         }
         # Check if user has configured archive-logs and/or remove-old-archived-logs from Raw Access
     	my $homedir = File::HomeDir::users_home($user);
-        if (-e("$homedir/.cpanel-logs")) { 
+#        if (-e("$homedir/.cpanel-logs")) { 
 			print BOLD RED "*** NOTICE: The $user account has a custom log configuration with the following: ***\n" unless(!(-s("$homedir/.cpanel-logs")));
             open(CUSTSETTINGS,"$homedir/.cpanel-logs");
             my @CUSTDATA=<CUSTSETTINGS>;
@@ -253,7 +253,7 @@ else {
                     print "Remove previous months archive from your home directory: " . $custvalue . "\n";
                 }
             }
-        }
+        #}
     }
 }
 
