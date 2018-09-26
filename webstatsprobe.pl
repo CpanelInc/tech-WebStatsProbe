@@ -6,7 +6,7 @@
 # http://cpanel.com
 # Unauthorized copying is prohibited
 
-# Tested on cPanel 11.30 - 64
+# Tested on cPanel 11.30 - 74
 
 use warnings;
 use strict;
@@ -18,7 +18,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.4';
+my $version = '1.5.5';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -157,10 +157,6 @@ if ( !defined($user) ) {
     if ( CanRunLogaholic() eq 'Yes' ) {
         print "LOGAHOLIC: ", IsAvailable('logaholic'), " (Active by Default: ", IsDefaultOn('LOGAHOLIC'), ")\n";
     }
-    else { 
-    	print "\nAs of cPanel version 11.48, LOGAHOLIC is only available as a plugin\n";
-    	print "See: http://www.logaholic.com/logaholic-cpanel-migration/ for more information.\n";
-    } 
 }
 else {
     # If called with a user argument, let's verify that user exists and display
@@ -234,7 +230,7 @@ else {
         }
         # Check if user has configured archive-logs and/or remove-old-archived-logs from Raw Access
     	my $homedir = File::HomeDir::users_home($user);
-#        if (-e("$homedir/.cpanel-logs")) { 
+        if (-e("$homedir/.cpanel-logs")) { 
 			print BOLD RED "*** NOTICE: The $user account has a custom log configuration with the following: ***\n" unless(!(-s("$homedir/.cpanel-logs")));
             open(CUSTSETTINGS,"$homedir/.cpanel-logs");
             my @CUSTDATA=<CUSTSETTINGS>;
@@ -253,7 +249,7 @@ else {
                     print "Remove previous months archive from your home directory: " . $custvalue . "\n";
                 }
             }
-        #}
+        }
     }
 }
 
