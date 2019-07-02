@@ -240,6 +240,7 @@ else {
             my $custvalue;
             foreach $custsettline(@CUSTDATA) { 
                 chomp($custsettline);
+                next if ($custsettline eq ""); 
                 ($custname,$custvalue)=(split(/=/,$custsettline));
                 $custvalue= ($custvalue) ? "Yes" : "No";
                 if ($custname eq "archive-logs") { 
