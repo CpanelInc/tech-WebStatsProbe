@@ -1,13 +1,33 @@
 #!/usr/local/cpanel/3rdparty/bin/perl
-
-# Copyright(c) 2017 cPanel, Inc.
-# All rights Reserved.
-# copyright@cpanel.net
-# http://cpanel.com
-# Unauthorized copying is prohibited
-
-# Tested on cPanel 11.30 - 74
-
+# Copyright 2019, cPanel, L.L.C.
+# All rights reserved.
+# http://cpanel.net
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the owner nor the names of its contributors may be
+# used to endorse or promote products derived from this software without
+# specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
 use warnings;
 use strict;
 use Term::ANSIColor qw(:constants);
@@ -18,7 +38,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.5';
+my $version = '1.5.6';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -247,7 +267,7 @@ else {
                     print "Archive logs in your home directory after each stats run: " . $custvalue . "\n";
                 }
                 if ($custname eq "remove-old-archived-logs") { 
-                    print "Remove previous months archive from your home directory: " . $custvalue . "\n";
+                    print "Remove previous month\'s archive from your home directory: " . $custvalue . "\n";
                 }
             }
         }
@@ -899,7 +919,7 @@ sub DisplayTS {
         print DARK GREEN "Off\n";
     }
 	
-	print "Remove previous months archive from users homedir (user configurable): ";
+	print "Remove previous month\'s archive from users homedir (user configurable): ";
     if ( $cpconf->{'default_remove-old-archived-logs'}) {
         print DARK GREEN "On\n";
     }
