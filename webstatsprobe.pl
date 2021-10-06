@@ -1,5 +1,5 @@
 #!/usr/local/cpanel/3rdparty/bin/perl
-# Copyright 2019, cPanel, L.L.C.
+# Copyright 2021, cPanel, L.L.C.
 # All rights reserved.
 # http://cpanel.net
 #
@@ -38,7 +38,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.6';
+my $version = '1.5.7';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -110,6 +110,9 @@ open( my $STATSCONFIG_FH, '<', '/etc/stats.conf' )
 open( my $CPVERSION_FH, '<', '/usr/local/cpanel/version' )
   or die "Could not open /usr/local/cpanel/version, $!\n";
 
+open( my $WWWACCTCONF_FH, '<', '/etc/wwwacct.conf' )
+  or die "Could not open /etc/wwwacct.conf, $!\n";
+
 my ( $CPUSER_FH, $CPUSERSTATS_FH );
 if ( defined($user) ) {
     open( $CPUSER_FH, '<', "/var/cpanel/users/$user" )
@@ -137,6 +140,9 @@ my %cpuser_settings;
 
 my %cpuser_stats_settings;
 %cpuser_stats_settings = get_settings($CPUSERSTATS_FH) if $CPUSERSTATS_FH;
+
+my %wwwacct_settings;
+%wwwacct_settings = get_settings($WWWACCTCONF_FH) if $WWWACCTCONF_FH;
 
 ####################
 # Main code output #
@@ -177,6 +183,7 @@ if ( !defined($user) ) {
     if ( CanRunLogaholic() eq 'Yes' ) {
         print "LOGAHOLIC: ", IsAvailable('logaholic'), " (Active by Default: ", IsDefaultOn('LOGAHOLIC'), ")\n";
     }
+    _check_logstyle();
 }
 else {
     # If called with a user argument, let's verify that user exists and display
@@ -220,6 +227,8 @@ else {
                 }
                 else { 
                     print "No broken eximstats_db files found in /var/cpanel\n";
+                    print "Restarting cpanellogd...\n";
+                    qx[ /usr/local/cpanel/scripts/restartsrv_cpanellogd ];
                 }
             }
             print "\n";
@@ -297,6 +306,8 @@ close($CPVERSION_FH);
 close($CPUSER_FH)      if defined($user);
 close($CPUSERSTATS_FH) if defined($user) and defined($CPUSERSTATS_FH);
 
+close($WWWACCTCONF_FH) if defined($WWWACCTCONF_FH);
+
 ################
 ## Subroutines #
 ################
@@ -306,7 +317,13 @@ sub get_settings {
     my %settings;
     while (<$FH>) {
         chomp;
-        my ( $option, $value ) = split('=');
+        my ( $option, $value );
+        if ( $_ =~ m/=/ ) {         ## Equal Sign
+            ( $option, $value ) = split('=');
+        }
+        else {      ## Space
+            ( $option, $value ) = split(' ');
+        }
         $settings{$option} = $value if defined($value);
     }
     return %settings;
@@ -412,6 +429,15 @@ sub IsDefaultOn {
     return;
 }
 
+sub _check_logstyle {
+    if ( %wwwacct_settings ) {
+        if ( exists( $wwwacct_settings{'LOGSTYLE'} ) && $wwwacct_settings{'LOGSTYLE'} eq 'common' ) {
+            print BOLD RED "*** Apache Access Log Style is NOT set to combined, stats may not run ***\n";
+        }
+    }
+    return;
+}
+
 sub AllAllowed {
     # Display if per WHM all users are allowed to pick stats programs
     if (%stats_settings) {
@@ -492,8 +518,8 @@ sub KeepingUp {
         $user    =~ s/\/var\/cpanel\/lastrun\///;
         $user    =~ s/\/stats//;
         if ( $duration > $interval and -d "/var/cpanel/userdata/$user" ) {
-            my $olduser = qx(ls -la /var/cpanel/lastrun/$user/stats);
-            push( @outofdate, $olduser ) if ( -e "/var/cpanel/users/$olduser" );
+            my $olduser = ( qx(ls -la /var/cpanel/lastrun/$user/stats) ) ? $user : "";;
+            push( @outofdate, $olduser ) if ( $olduser );
         }
     }
 
@@ -605,13 +631,15 @@ sub CheckBadPerms {
 
 sub HttpdConf {
     # No stats if Apache conf has problems, so check syntax
-    my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
+    #my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
+    my $check = qx( httpd -t 2>&1);
 
     if ( $check =~ 'Syntax OK' ) {
         return DARK GREEN 'Syntax OK';
     }
     else {
-        return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: httpd configtest)\n\n",
+        #return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: /usr/local/apache/bin/apachectl )\n\n",
+        return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: httpd -t)\n\n",
           BOLD RED
 "*** This means that Apache can't do a graceful restart and that the domlogs will be 0 bytes in size, so therefore no new stats will be processed until httpd.conf is fixed! ***\n";
     }
@@ -965,7 +993,7 @@ sub DisplayTS {
 	print "Log rotation size (in megabytes): ";
     print DARK GREEN $cpconf->{'rotatelogs_size_threshhold_in_megabytes'} . "\n";
 	
-    print "Extra CPUs for server load: ";
+    print "Extra CPUs for server load [ Cores: $corecnt ]: ";
     print DARK GREEN $cpconf->{'extracpus'} . "\n";
 
     return;
