@@ -1,5 +1,5 @@
 #!/usr/local/cpanel/3rdparty/bin/perl
-# Copyright 2021, cPanel, L.L.C.
+# Copyright 2022, cPanel, L.L.C.
 # All rights reserved.
 # http://cpanel.net
 #
