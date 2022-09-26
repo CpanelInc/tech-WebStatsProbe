@@ -38,7 +38,7 @@ use Net::DNS;
 use Cpanel::Config::LoadCpConf      ();
 
 
-my $version = '1.5.7';
+my $version = '1.5.8';
 my $cycle_hours;
 my $bwcycle;
 my $prog;
@@ -631,14 +631,12 @@ sub CheckBadPerms {
 
 sub HttpdConf {
     # No stats if Apache conf has problems, so check syntax
-    #my $check = qx(/usr/local/apache/bin/apachectl configtest 2>&1);
     my $check = qx( httpd -t 2>&1);
 
     if ( $check =~ 'Syntax OK' ) {
         return DARK GREEN 'Syntax OK';
     }
     else {
-        #return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: /usr/local/apache/bin/apachectl )\n\n",
         return BOLD RED 'Syntax Errors ', BOLD WHITE "(Run: httpd -t)\n\n",
           BOLD RED
 "*** This means that Apache can't do a graceful restart and that the domlogs will be 0 bytes in size, so therefore no new stats will be processed until httpd.conf is fixed! ***\n";
@@ -856,7 +854,11 @@ sub DomainResolves {
     my $res = Net::DNS::Resolver->new;
 
     # See what IPs are bound on the system
-    chomp( my $iplist = qx(ip addr show) );
+    my $iplist = qx( ip addr show);
+    if ( -e '/var/cpanel/cpnat' ) {
+        $iplist .= qx(cat '/var/cpanel/cpnat');
+    }
+    chomp($iplist);
 
     # Grab domain list from the cPanel user file
     while ( my ( $key, $value ) = each %cpuser_settings ) {
@@ -870,17 +872,16 @@ sub DomainResolves {
             foreach my $rr ( grep { $_->type eq 'A' } $query->answer ) {
                 $ip = $rr->address;
             }
-
-            # If the domain resolves, just not to an IP not on this server
+            # If the domain resolves, just not to an IP on this server
             if ( $iplist !~ qr/$ip/ ) {
-                $notbound .= "$name\n";
+                $notbound .= "$name [$ip]\n";
             }
         }
         else {
             # If it doesn't resolve at all (NXDOMAIN)
             my $error_string = $res->errorstring;
             if ( $error_string eq 'NXDOMAIN' ) {
-                $donotresolve .= "$name\n";
+                $donotresolve .= "$name [NXDOMAIN]\n";
             }
             elsif ( $error_string eq 'Send error: Operation not permitted' ) {
                 $timedout .= "$name\n";
